@@ -122,20 +122,35 @@ def obter_worksheet_agenda():
         )
 
     primeira_linha = ws.row_values(1)                   # lê o conteúdo da primeira linha
-    if not primeira_linha:                              # se estiver vazia
-        ws.update(                                      # reescreve o cabeçalho para garantir consistência
-            "A1:H1",
-            [[
-                "dia_semana",
-                "data",
-                "hora",
-                "nome_paciente",
-                "telefone",
-                "status",
-                "origem",
-                "observacoes"
-            ]]
-        )
+    expected_headers = [
+        "dia_semana",
+        "data",
+        "hora",
+        "nome_paciente",
+        "telefone",
+        "status",
+        "origem",
+        "observacoes",
+    ]
+
+    try:
+        normalized_first = [c.strip().lower() for c in primeira_linha[: len(expected_headers)]]
+    except Exception:
+        normalized_first = []
+
+    # Se a primeira linha não corresponder aos cabeçalhos esperados,
+    # presumimos que a linha de cabeçalho foi deletada ou corrompida.
+    # Nesse caso, inserimos a linha de cabeçalho acima do primeiro item.
+    if normalized_first != expected_headers:
+        try:
+            ws.insert_row(expected_headers, index=1)
+        except Exception:
+            # fallback: tentar sobrescrever A1:H1 (caso insert_row não esteja disponível)
+            try:
+                ws.update("A1:H1", [expected_headers])
+            except Exception:
+                # se falhar, prosseguimos sem interromper; operações posteriores podem falhar
+                pass
 
     _worksheet_agenda = ws                              # armazena em cache a worksheet
     return ws                                           # retorna a worksheet pronta
@@ -161,7 +176,6 @@ def obter_todos_agenda_cached(ttl_seconds: int = 5):
         raise
     _cache[key] = (now, vals)
     return vals
-
 
 def obter_worksheet_cadastros():
     """
@@ -787,18 +801,18 @@ def cancelar_agendamento_por_data_hora(dt_consulta: datetime) -> bool:
     # Além de limpar o slot na aba Agenda, marcar lembretes relacionados
     # como enviados para evitar que sejam reenviados no restart.
     try:
-        lembs = obter_lembretes_pendentes()
         appt_iso = dt_consulta.isoformat()
-        for l in lembs:
-            if l.get('appointment_iso') == appt_iso:
-                try:
-                    marcar_lembrete_como_enviado(l['row'])
-                except Exception:
-                    import logging
-                    logging.getLogger(__name__).exception('[cancel] failed marking lembrete sent for row=%s', l.get('row'))
+        telefone_exist = (linha_conteudo[4].strip() if len(linha_conteudo) > 4 else None)
+        # remove any pending reminders for this appointment and telefone
+        try:
+            remover = remover_lembretes_por_appointment
+            remover(appt_iso, telefone_exist)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('[cancel] failed removing lembretes for appointment=%s tel=%s', appt_iso, telefone_exist)
     except Exception:
         import logging
-        logging.getLogger(__name__).exception('[cancel] error while marking lembretes after cancellation')
+        logging.getLogger(__name__).exception('[cancel] error while removing lembretes after cancellation')
 
     return True                                         # retorna sucesso
 
@@ -937,8 +951,82 @@ def marcar_lembrete_como_enviado(row_index):
         ws.update_acell(cell, sent_iso)
     except Exception:
         # fallback to update with proper 2D values
-        ws.update(cell, [[sent_iso]])
+        try:
+            ws.update(cell, [[sent_iso]])
+        except Exception:
+            # as a last resort, try to delete the row (best-effort)
+            try:
+                ws.delete_rows(row_index)
+                return True
+            except Exception:
+                raise
     return True
+
+
+def remover_lembrete_por_row(row_index):
+    """Remove a linha do lembrete indicada pelo índice (1-based).
+    Retorna True se removido, False caso contrário.
+    """
+    ws = obter_worksheet_lembretes()
+    try:
+        ws.delete_rows(row_index)
+        return True
+    except Exception:
+        return False
+
+
+def remover_lembretes_por_appointment(appointment_iso, telefone=None):
+    """Remove todos os lembretes pendentes que correspondam a um appointment_iso.
+    A remoção sempre tentará casar por telefone + data + horário do agendamento
+    (formato escrito na planilha: `appointment_date` = dd/mm/YYYY, `appointment_time` = HH:MM).
+    Se `telefone` for fornecido, filtra por telefone também. Retorna o número de linhas removidas.
+    """
+    ws = obter_worksheet_lembretes()
+    pend = obter_lembretes_pendentes()
+    rows_to_delete = []
+    # normalize target date/time from appointment_iso when possible
+    target_date = None
+    target_time = None
+    from datetime import datetime
+    if appointment_iso:
+        try:
+            dt = datetime.fromisoformat(appointment_iso)
+            target_date = dt.strftime("%d/%m/%Y")
+            target_time = dt.strftime("%H:%M")
+        except Exception:
+            target_date = None
+            target_time = None
+
+    for p in pend:
+        # Ensure the record has expected fields
+        appt_date = p.get('appointment_date')
+        appt_time = p.get('appointment_time')
+        tel = p.get('telefone')
+        if target_date and target_time:
+            match_dt = (appt_date == target_date and appt_time == target_time)
+        else:
+            # fallback to comparing appointment_iso strings
+            match_dt = (p.get('appointment_iso') == appointment_iso)
+        if not match_dt:
+            continue
+        if telefone is not None:
+            if str(tel) == str(telefone):
+                rows_to_delete.append(p['row'])
+        else:
+            rows_to_delete.append(p['row'])
+
+    if not rows_to_delete:
+        return 0
+    # delete from bottom to top to avoid shifting indices
+    rows_to_delete = sorted(set(rows_to_delete), reverse=True)
+    removed = 0
+    for r in rows_to_delete:
+        try:
+            ws.delete_rows(r)
+            removed += 1
+        except Exception:
+            continue
+    return removed
 
 
 def cancelar_proximo_agendamento_por_telefone(telefone: str):
@@ -1012,6 +1100,20 @@ def cancelar_proximo_agendamento_por_telefone(telefone: str):
 
     intervalo = f"A{melhor_linha}:H{melhor_linha}"      # intervalo da linha
     ws.update(intervalo, [nova_linha])                  # atualiza na planilha
+
+    # Além de limpar o slot na aba Agenda, marcar lembretes relacionados
+    # como enviados para evitar que sejam reenviados no restart.
+    try:
+        appt_iso = melhor_dt.isoformat()
+        try:
+            remover = remover_lembretes_por_appointment
+            remover(appt_iso, telefone)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('[cancel_prox] failed removing lembretes for appointment=%s', appt_iso)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('[cancel_prox] error while removing lembretes after cancellation')
 
     return melhor_dt                                    # retorna datetime do agendamento cancelado
 

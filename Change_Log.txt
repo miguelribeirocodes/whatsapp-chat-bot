@@ -1,6 +1,12 @@
-- Correção do texto ao selecionar pra Cancelar que aparece "Seg, 22/12 16:00 \nSegunda-feira, 22/12/2025 16:00", sendo que deveria ser "Segunda-feira, 22/12/2025 16:00". Outra correção: caso o usuário reagende ou cancele uma consulta, o reminder da consulta remarcada/cancelada deve ser trocado/removido, porém a planilha persiste.
-- Como o chat vai reagir caso o usuário selecione um dia sem horários disponíveis? Ou nem vai aparecer o dia se não tiver horário?
-- Consultar valores e formas de pagamentos dentro do menu principal.
+Próximos passos:
+1) Correção do texto ao selecionar pra Cancelar que aparece "Seg, 22/12 16:00 \nSegunda-feira, 22/12/2025 16:00", sendo que deveria ser "Segunda-feira, 22/12/2025 16:00". Outra correção: caso o usuário reagende ou cancele uma consulta, o reminder da consulta remarcada/cancelada deve ser trocado/removido, porém a planilha persiste.
+2) Como o chat vai reagir caso o usuário selecione um dia sem horários disponíveis? Ou nem vai aparecer o dia se não tiver horário?
+3) Consultar valores e formas de pagamentos dentro do menu principal.
+4) Verificar se o código está incluindo slots disponíveis sempre que ele reinicia. E além disso, vamos sempre criar slot disponível para o mês seguinte e todo dia verificar se já foi criado ou não. Exemplo: hoje é dia 18/12/2025, deve ter slots disponíveis para até o dia 18/01/2026. Amanhã, vai verificar se tem até o dia 19/01/2025, e assim por diante. Caso ele encontre algum slot que o status é "FOLGA", ele não deve mexer pq significa que foi inserido manualmente pelo dono.
 
 - [18/12/2025] Removida opção "Sair" do menu principal para evitar encerramentos indesejados pelo usuário. Agora o menu principal apresenta apenas: Agendar, Reagendar e Cancelar.
 - [18/12/2025] Alterado fallback para entradas desconhecidas: o bot reenvia o menu principal em vez de responder "Funcionalidade em desenvolvimento", mantendo o usuário em um fluxo guiado.
+
+- [18/12/2025] Corrigido bug de processamento de respostas interativas: normalização de `mensagem` em `processar_mensagem` (`whatsapp_flow.py`) para aceitar ids numéricos vindos do webhook (ex.: `1`, `2`, `3`). Isso resolve casos em que respostas por botão não eram reconhecidas.
+- [18/12/2025] Ao cancelar o próximo agendamento por telefone (`cancelar_proximo_agendamento_por_telefone` em `agenda_service.py`), agora marcamos lembretes relacionados na aba `Lembretes` como enviados para evitar reenvios após reinício do serviço.
+ - [18/12/2025] Adicionada proteção para caso a linha de cabeçalho da aba `Agenda` seja deletada: `obter_worksheet_agenda()` agora verifica os cabeçalhos esperados e, se ausentes ou incorretos, insere a linha de cabeçalho no topo (fallback: sobrescrever `A1:H1`).
