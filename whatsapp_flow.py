@@ -51,19 +51,30 @@ CONFIRM_CANCEL_APPOINTMENT = 'confirm_cancel_appointment'
 sessoes = {}
 
 def exibir_menu_principal():
-    return (
-        f"{MSG.MENU_PROMPT}\n"
-        f"1️⃣ {MSG.MENU_AGENDAR}\n"
-        f"2️⃣ {MSG.MENU_REAGENDAR}\n"
-        f"3️⃣ {MSG.MENU_CANCELAR}\n"
-    )
+    """Retorna uma tupla (texto, items) onde `texto` é a versão em string do menu
+    e `items` é uma lista de tuples (id, title, description) pronta para enviar como lista interactive.
+    """
+    # Corpo textual do menu: uma linha de saudação/identidade e uma linha com o prompt de ação
+    texto = f"{MSG.MENU_PROMPT}\n{MSG.LIST_BODY_TEXT}"
+    items = [
+        ("1", MSG.MENU_AGENDAR, ""),
+        ("2", MSG.MENU_REAGENDAR, ""),
+        ("3", MSG.MENU_CANCELAR, ""),
+        ("4", MSG.MENU_VALORES, ""),
+    ]
+    return texto, items
 
 def processar_mensagem(usuario_id, mensagem):
     # Obter estado atual do usuário
     estado = sessoes.get(usuario_id, MENU_PRINCIPAL)
-
     # Normalizar mensagem para decisões simples
-    texto_normalizado = (mensagem or "").strip().lower()
+    # Algumas respostas interativas podem chegar como números (int) —
+    # garantir que `mensagem` seja sempre string sem espaços para as comparações.
+    if mensagem is None:
+        mensagem = ""
+    else:
+        mensagem = str(mensagem).strip()
+    texto_normalizado = mensagem.lower()
     is_back = (texto_normalizado in ('0', 'voltar')) or (mensagem == '⬅️')
     is_cancel = (texto_normalizado in ('9', 'cancelar', 'cancel'))
     # Helper to restore previous state when user backs out from a confirm dialog
@@ -76,9 +87,18 @@ def processar_mensagem(usuario_id, mensagem):
         return MENU_PRINCIPAL
     # Responder a saudações com o menu principal (inclui cumprimento)
     if estado == MENU_PRINCIPAL and texto_normalizado in ("oi", "olá", "ola", "boa tarde", "bom dia", "boa noite"):
-        return MSG.WELCOME + "\n" + exibir_menu_principal()
+        menu_text, _ = exibir_menu_principal()
+        return MSG.WELCOME + "\n" + menu_text
 
     if estado == MENU_PRINCIPAL:
+        # Se o usuário pressionou Voltar/Cancelar mesmo estando no menu principal
+        # (por exemplo após um send_back_cancel_buttons), tratar apropriadamente.
+        if is_back:
+            menu_text, _ = exibir_menu_principal()
+            return MSG.WELCOME + "\n" + menu_text
+        if is_cancel:
+            menu_text, _ = exibir_menu_principal()
+            return MSG.OPERATION_CANCELLED + "\n" + menu_text
         if mensagem == '1':
             sessoes[usuario_id] = AGENDAR
             sessoes[usuario_id + '_semana_offset'] = 0
@@ -90,10 +110,13 @@ def processar_mensagem(usuario_id, mensagem):
             sessoes[usuario_id] = CANCELAR
             # trigger cancel flow initial listing
             return processar_mensagem(usuario_id, '')
+        elif mensagem == '4':
+            # Mostrar informações de valores e formas de pagamento
+            # Mantém o usuário no menu principal após exibir as informações
+            return f"{MSG.PAYMENT_TITLE}\n{MSG.PAYMENT_INFO}\n"
         else:
-            return MSG.INVALID_OPTION + " Escolha uma das opções abaixo:\n" + exibir_menu_principal()
-    else:
-        return MSG.INVALID_OPTION + " Escolha uma das opções abaixo:\n" + exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return MSG.INVALID_OPTION + " Escolha uma das opções abaixo:\n" + menu_text
 
     if estado == AGENDAR:
         # Navegação entre semanas
@@ -104,7 +127,8 @@ def processar_mensagem(usuario_id, mensagem):
             sessoes.pop(usuario_id + '_semana_offset', None)
             sessoes.pop(usuario_id + '_dia_escolhido', None)
             sessoes.pop(usuario_id + '_horario_escolhido', None)
-            return MSG.OPERATION_CANCELLED + "\n" + exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return MSG.OPERATION_CANCELLED + "\n" + menu_text
         if mensagem == '1':  # Esta semana
             sessoes[usuario_id + '_semana_offset'] = 0
             sessoes[usuario_id] = ESCOLHER_DIA
@@ -115,7 +139,8 @@ def processar_mensagem(usuario_id, mensagem):
             return exibir_dias_disponiveis(usuario_id, 1)
         elif is_back:
             sessoes[usuario_id] = MENU_PRINCIPAL
-            return exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return menu_text
         else:
             return MSG.INVALID_OPTION + ". Escolha uma semana:\n" + exibir_semanas_disponiveis(usuario_id)
 
@@ -146,7 +171,8 @@ def processar_mensagem(usuario_id, mensagem):
             sessoes['_lista_agendamentos'] = agendamentos
             if not agendamentos:
                 sessoes[usuario_id] = MENU_PRINCIPAL
-                return "Nenhum agendamento futuro encontrado.\n" + exibir_menu_principal()
+                menu_text, _ = exibir_menu_principal()
+                return "Nenhum agendamento futuro encontrado.\n" + menu_text
             texto = "Escolha o agendamento para reagendar:\n"
             for idx, (dt, linha) in enumerate(agendamentos):
                 nome = linha[3] or "Paciente"
@@ -156,11 +182,13 @@ def processar_mensagem(usuario_id, mensagem):
         if is_back:
             sessoes[usuario_id] = MENU_PRINCIPAL
             sessoes.pop('_lista_agendamentos', None)
-            return exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return menu_text
         if is_cancel:
             sessoes[usuario_id] = MENU_PRINCIPAL
             sessoes.pop('_lista_agendamentos', None)
-            return MSG.OPERATION_CANCELLED + "\n" + exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return MSG.OPERATION_CANCELLED + "\n" + menu_text
         try:
             idx = int(mensagem) - 1
             agendamentos = sessoes['_lista_agendamentos']
@@ -215,7 +243,8 @@ def processar_mensagem(usuario_id, mensagem):
             sessoes['_lista_agendamentos_cancelar'] = agendamentos
             if not agendamentos:
                 sessoes[usuario_id] = MENU_PRINCIPAL
-                return "Nenhum agendamento futuro encontrado.\n" + exibir_menu_principal()
+                menu_text, _ = exibir_menu_principal()
+                return "Nenhum agendamento futuro encontrado.\n" + menu_text
             texto = "Escolha o agendamento para cancelar:\n"
             for idx, (dt, linha) in enumerate(agendamentos):
                 nome = linha[3] or "Paciente"
@@ -225,11 +254,13 @@ def processar_mensagem(usuario_id, mensagem):
         if is_back:
             sessoes[usuario_id] = MENU_PRINCIPAL
             sessoes.pop('_lista_agendamentos_cancelar', None)
-            return exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return menu_text
         if is_cancel:
             sessoes[usuario_id] = MENU_PRINCIPAL
             sessoes.pop('_lista_agendamentos_cancelar', None)
-            return MSG.OPERATION_CANCELLED + "\n" + exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return MSG.OPERATION_CANCELLED + "\n" + menu_text
         try:
             idx = int(mensagem) - 1
             agendamentos = sessoes['_lista_agendamentos_cancelar']
@@ -266,7 +297,8 @@ def processar_mensagem(usuario_id, mensagem):
                 sessoes.pop(usuario_id + '_semana_offset', None)
                 sessoes.pop(usuario_id + '_dia_escolhido', None)
                 sessoes.pop(usuario_id + '_horario_escolhido', None)
-                return MSG.OPERATION_CANCELLED + "\n" + exibir_menu_principal()
+                menu_text, _ = exibir_menu_principal()
+                return MSG.OPERATION_CANCELLED + "\n" + menu_text
             if is_back:
                 # voltar para seleção de semana (onde o usuário escolhe 'Esta semana'/'Próxima semana')
                 sessoes[usuario_id] = AGENDAR
@@ -291,7 +323,8 @@ def processar_mensagem(usuario_id, mensagem):
                 # limpar escolhas intermédias
                 sessoes.pop(usuario_id + '_horario_escolhido', None)
                 sessoes.pop(usuario_id + '_dia_escolhido', None)
-                return MSG.OPERATION_CANCELLED + "\n" + exibir_menu_principal()
+                menu_text, _ = exibir_menu_principal()
+                return MSG.OPERATION_CANCELLED + "\n" + menu_text
             if is_back:
                 # voltar para seleção de dia (permitir escolher outro dia da mesma semana)
                 sessoes[usuario_id] = ESCOLHER_DIA
@@ -316,7 +349,8 @@ def processar_mensagem(usuario_id, mensagem):
             # clear interim choices
             sessoes.pop(usuario_id + '_horario_escolhido', None)
             sessoes.pop(usuario_id + '_dia_escolhido', None)
-            return MSG.OPERATION_CANCELLED + "\n" + exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return MSG.OPERATION_CANCELLED + "\n" + menu_text
         if mensagem == '1':
             horario = sessoes.get(usuario_id + '_horario_escolhido')
             # Se for reagendamento, cancelar o antigo
@@ -335,7 +369,7 @@ def processar_mensagem(usuario_id, mensagem):
             )
             # Persist and schedule reminders: patient reminder and notify owner immediately
             try:
-                from agenda_service import registrar_lembrete_agendamento, marcar_lembrete_como_enviado
+                from agenda_service import registrar_lembrete_agendamento
                 from scheduler import schedule_at
                 from datetime import timedelta, datetime
                 reminder_dt = horario - timedelta(hours=MSG.REMINDER_HOURS_BEFORE)
@@ -358,7 +392,7 @@ def processar_mensagem(usuario_id, mensagem):
                         __import__('logging').getLogger('whatsapp_flow').exception('failed sending reminder')
                     try:
                         if row:
-                            __import__('agenda_service').marcar_lembrete_como_enviado(row)
+                            __import__('agenda_service').remover_lembrete_por_row(row)
                     except Exception:
                         pass
 
@@ -377,7 +411,8 @@ def processar_mensagem(usuario_id, mensagem):
                 pass
             sessoes[usuario_id] = MENU_PRINCIPAL
             nome_para_msg = nome_paciente.split()[0] if nome_paciente else ''
-            return MSG.AGENDAMENTO_CONFIRMADO.format(name=nome_para_msg) + "\n" + exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return MSG.AGENDAMENTO_CONFIRMADO.format(name=nome_para_msg) + "\n" + menu_text
         elif is_back:
             sessoes[usuario_id] = ESCOLHER_HORARIO
             return exibir_horarios_disponiveis(usuario_id, sessoes.get(usuario_id + '_dia_escolhido'))
@@ -398,24 +433,29 @@ def processar_mensagem(usuario_id, mensagem):
             sessoes.pop('_lista_agendamentos_cancelar', None)
             sessoes[usuario_id] = MENU_PRINCIPAL
             if sucesso:
-                return MSG.CANCEL_SUCCESS_TEMPLATE.format(date=_format_data_pt(dt), time=dt.strftime('%H:%M')) + "\n" + exibir_menu_principal()
+                menu_text, _ = exibir_menu_principal()
+                return MSG.CANCEL_SUCCESS_TEMPLATE.format(date=_format_data_pt(dt), time=dt.strftime('%H:%M')) + "\n" + menu_text
             else:
-                return "Falha ao cancelar.\n" + exibir_menu_principal()
+                menu_text, _ = exibir_menu_principal()
+                return "Falha ao cancelar.\n" + menu_text
         if is_back:
             # go back to cancel list
             prev = _restore_prev_state()
             if prev == CANCELAR:
                 return processar_mensagem(usuario_id, '')
-            return exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return menu_text
         if is_cancel:
             # treat as full abort
             sessoes.pop(usuario_id + '_cancel_target', None)
             sessoes.pop(usuario_id + '_prev_state', None)
             sessoes[usuario_id] = MENU_PRINCIPAL
-            return MSG.OPERATION_CANCELLED + "\n" + exibir_menu_principal()
+            menu_text, _ = exibir_menu_principal()
+            return MSG.OPERATION_CANCELLED + "\n" + menu_text
 
     # Para entradas desconhecidas, reexibir o menu principal (loop amigável)
-    return exibir_menu_principal()
+    menu_text, _ = exibir_menu_principal()
+    return menu_text
 
 
 # Função para exibir semanas disponíveis
@@ -465,7 +505,7 @@ if __name__ == "__main__":
     print("(Aguarde, preparando agenda de slots disponíveis...)\n")
     inicializar_slots_proximos_dias()
     usuario = 'user1'
-    print(exibir_menu_principal())
+    print(exibir_menu_principal()[0])
     while True:
         msg = input('Usuário: ')
         resposta = processar_mensagem(usuario, msg)

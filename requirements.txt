@@ -7,3 +7,5 @@ python-dotenv
 requests
 fastapi
 scikit-learn
+uvicorn
+pandas

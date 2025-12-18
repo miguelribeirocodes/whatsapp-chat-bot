@@ -12,11 +12,13 @@ INVALID_OPTION = "Opção inválida."
 WAIT_MSG = "Aguarde um momento, por favor."
 
 # Menu principal / opções
-MENU_PROMPT = "O que deseja fazer?"
+MENU_PROMPT = f"Sou a secretária virtual da {CLINIC_NAME}."
 MENU_AGENDAR = "Agendar"
 MENU_REAGENDAR = "Reagendar"
 MENU_CANCELAR = "Cancelar"
 MENU_SAIR = "Sair"
+MENU_VALORES = "Valores e Pagamento"
+MENU_LIST_TITLE = "Outras opções"
 
 # Semanas
 WEEKS_PROMPT = "Escolha a semana:"  # usado antes dos botões de semana
@@ -50,6 +52,11 @@ CANCEL_SUCCESS_TEMPLATE = "Agendamento em {date} às {time} cancelado com sucess
 # Outros
 NO_DAYS_AVAILABLE = "Nenhum dia disponível nesta semana." 
 NO_HOURS_AVAILABLE = "Nenhum horário disponível neste dia." 
+
+# Valores e formas de pagamento
+PAYMENT_TITLE = "Valores e Formas de Pagamento"
+PAYMENT_INFO = "Consulta: R$ 150,00. Aceitamos: Cartão, Pix e Dinheiro. O pagamento será realizado no momento da consulta." 
+PAYMENT_METHODS = "Cartão, Pix, Dinheiro"
 
 # Pedido de nome no primeiro contato
 ASK_FULL_NAME = "Olá! Por favor, informe seu nome completo:" 

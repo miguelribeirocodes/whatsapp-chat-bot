@@ -134,23 +134,56 @@ except Exception:
 # (startup pending reminders logic is executed after helper functions are defined)
 
 
-def send_menu_buttons(to: str, text: str):
-    headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}  # headers para autenticação
-    # botões em português
-    payload = {  # payload interativo do tipo button (até 3 botões)
+def send_menu_buttons(to: str, text: str, items: list = None):
+    # Envia o menu principal como uma única lista interativa com 4 opções.
+    # `items` (opcional) deve ser uma lista de tuples (id, title, description).
+    headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
+
+    # O header de uma lista tem limite de 60 caracteres; usamos apenas a primeira
+    # linha do `text` como header. Se essa primeira linha exceder 60 chars,
+    # enviaremos a mensagem completa como texto e usaremos um header curto
+    # e neutro para a lista para evitar duplicação visual.
+    header_text = ''
+    try:
+        if isinstance(text, str):
+            # escolher apenas a primeira linha para o header
+            header_text = text.split('\n', 1)[0].strip() or ''
+        if not header_text:
+            header_text = MSG.MENU_LIST_TITLE
+        if len(header_text) > 60:
+            try:
+                # enviar a mensagem completa como texto (cumprimento + prompt)
+                send_text(to, text)
+            except Exception:
+                logger.exception('[send_menu_buttons] falha ao enviar texto longo antes da lista')
+            # usar um header curto e neutro para a lista (evita repetir o cumprimento)
+            header_text = MSG.MENU_LIST_TITLE
+    except Exception:
+        header_text = MSG.MENU_LIST_TITLE
+
+    sections = [{"title": MSG.MENU_LIST_TITLE, "rows": []}]
+    # rows: id, title, description — use `items` se fornecido, caso contrário use padrão
+    if items and isinstance(items, list):
+        rows = items
+    else:
+        rows = [
+            ("1", MSG.MENU_AGENDAR, ""),
+            ("2", MSG.MENU_REAGENDAR, ""),
+            ("3", MSG.MENU_CANCELAR, ""),
+            ("4", MSG.MENU_VALORES, ""),
+        ]
+    for id_, title, desc in rows:
+        sections[0]["rows"].append({"id": id_, "title": title, "description": desc})
+
+    payload = {
         "messaging_product": "whatsapp",
         "to": to,
         "type": "interactive",
         "interactive": {
-            "type": "button",
-            "body": {"text": text},
-                "action": {
-                "buttons": [
-                    {"type": "reply", "reply": {"id": "1", "title": MSG.MENU_AGENDAR}},
-                    {"type": "reply", "reply": {"id": "2", "title": MSG.MENU_REAGENDAR}},
-                    {"type": "reply", "reply": {"id": "3", "title": MSG.MENU_CANCELAR}}
-                ]
-            }
+            "type": "list",
+            "header": {"type": "text", "text": header_text},
+            "body": {"text": MSG.LIST_BODY_TEXT},
+            "action": {"button": MSG.LIST_BUTTON_LABEL, "sections": sections}
         }
     }
     try:
@@ -310,9 +343,36 @@ def send_back_cancel_buttons(to: str, text: str = 'Deseja voltar ou cancelar?'):
         raise  # re-levanta
 
 
+def send_back_only_button(to: str, text: str = 'Voltar'):
+    """Envia um único botão 'Voltar' (id '0')."""
+    headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "interactive",
+        "interactive": {
+            "type": "button",
+            "body": {"text": text},
+            "action": {
+                "buttons": [
+                    {"type": "reply", "reply": {"id": "0", "title": MSG.LABEL_VOLTA}}
+                ]
+            }
+        }
+    }
+    try:
+        logger.info("[send_back_only_button] Sending to %s payload=%s", to, json.dumps(payload, ensure_ascii=False))
+        r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)
+        logger.info("[send_back_only_button] Response status=%s body=%s", r.status_code, r.text)
+        return r
+    except Exception:
+        logger.exception("[send_back_only_button] Exception while sending back-only button")
+        raise
+
+
 # On startup, load pending reminders from sheet and schedule/send them
 try:
-    from agenda_service import obter_lembretes_pendentes, marcar_lembrete_como_enviado
+    from agenda_service import obter_lembretes_pendentes
     from datetime import datetime
     pendentes = obter_lembretes_pendentes()  # all pending
     for lemb in pendentes:
@@ -323,24 +383,28 @@ try:
         ag_dt = datetime.fromisoformat(lemb['appointment_iso']) if lemb.get('appointment_iso') else None
         if sched <= datetime.now():
             # send immediately (interactive confirm) and mark
-            try:
-                # try to personalize using cadastro
                 try:
-                    perfil = buscar_perfil_por_telefone(telefone)
-                    primeiro = (perfil.get('nome') or '').split()[0] if perfil and perfil.get('nome') else ''
+                    # try to personalize using cadastro
+                    try:
+                        perfil = buscar_perfil_por_telefone(telefone)
+                        primeiro = (perfil.get('nome') or '').split()[0] if perfil and perfil.get('nome') else ''
+                    except Exception:
+                        primeiro = ''
+                    greeting = f"Olá, {primeiro}!\n" if primeiro else ''
+                    appt_text = MSG.REMINDER_TEMPLATE.format(date=lemb['appointment_date'], time=lemb['appointment_time'])
+                    action = MSG.REMINDER_ACTION_PROMPT if hasattr(MSG, 'REMINDER_ACTION_PROMPT') else ''
+                    text = greeting + appt_text + ("\n" + action if action else "")
+                    send_reminder_confirm_buttons(telefone, text, lemb['appointment_iso'])
                 except Exception:
-                    primeiro = ''
-                greeting = f"Olá, {primeiro}!\n" if primeiro else ''
-                appt_text = MSG.REMINDER_TEMPLATE.format(date=lemb['appointment_date'], time=lemb['appointment_time'])
-                action = MSG.REMINDER_ACTION_PROMPT if hasattr(MSG, 'REMINDER_ACTION_PROMPT') else ''
-                text = greeting + appt_text + ("\n" + action if action else "")
-                send_reminder_confirm_buttons(telefone, text, lemb['appointment_iso'])
-            except Exception:
-                logger.exception('[startup] failed to send pending reminder row=%s', row)
-            try:
-                marcar_lembrete_como_enviado(row)
-            except Exception:
-                logger.exception('[startup] failed to mark reminder sent row=%s', row)
+                    logger.exception('[startup] failed to send pending reminder row=%s', row)
+                    try:
+                        # remove the reminder row after sending
+                        remover = __import__('agenda_service').remover_lembrete_por_row
+                        removed = remover(row)
+                        if not removed:
+                            logger.warning('[startup] failed to remove reminder row=%s (will not mark as sent)', row)
+                    except Exception:
+                        logger.exception('[startup] failed to remove reminder row=%s', row)
         else:
             # schedule for future
             try:
@@ -361,9 +425,12 @@ try:
                     except Exception:
                         logger.exception('[startup] failed sending scheduled reminder row=%s', row)
                     try:
-                        marcar_lembrete_como_enviado(row)
+                        remover = __import__('agenda_service').remover_lembrete_por_row
+                        removed = remover(row)
+                        if not removed:
+                            logger.warning('[startup] failed to remove scheduled reminder row=%s (will not mark as sent)', row)
                     except Exception:
-                        logger.exception('[startup] failed marking sent row=%s', row)
+                        logger.exception('[startup] failed to remove scheduled reminder row=%s', row)
                 schedule_at(sched, _send_and_mark_start)
             except Exception:
                 logger.exception('[startup] failed to schedule pending reminder row=%s', row)
@@ -421,7 +488,7 @@ async def webhook(request: Request):
                             # handle reminder actions immediately
                             if action in ('rem_confirm', 'rem_cancel') and app_iso:
                                 try:
-                                    from agenda_service import cancelar_agendamento_por_data_hora, obter_lembretes_pendentes, marcar_lembrete_como_enviado
+                                    from agenda_service import cancelar_agendamento_por_data_hora, obter_lembretes_pendentes
                                     from datetime import datetime
                                     if action == 'rem_confirm':
                                         # acknowledge confirmation (personalized)
@@ -434,14 +501,12 @@ async def webhook(request: Request):
                                             send_text(from_number, MSG.REMINDER_CONFIRMED_MSG.format(name=primeiro))
                                         except Exception:
                                             logger.exception('[rem_handler] failed sending confirmation message')
-                                        # mark any matching lembretes for this appointment as sent
-                                        pend = obter_lembretes_pendentes()
-                                        for p in pend:
-                                            if p.get('appointment_iso') == app_iso and p.get('telefone') == from_number:
-                                                try:
-                                                    marcar_lembrete_como_enviado(p['row'])
-                                                except Exception:
-                                                    logger.exception('[rem_handler] failed marking lembrete sent')
+                                        # remove any matching lembretes for this appointment
+                                        try:
+                                            remover = __import__('agenda_service').remover_lembretes_por_appointment
+                                            remover(app_iso, from_number)
+                                        except Exception:
+                                            logger.exception('[rem_handler] failed removing lembretes for appointment')
                                         # handled — continue to next message
                                         continue
                                     elif action == 'rem_cancel':
@@ -459,14 +524,12 @@ async def webhook(request: Request):
                                             send_text(from_number, MSG.REMINDER_CANCELLED_MSG)
                                         else:
                                             send_text(from_number, 'Não foi possível cancelar. Tente novamente.')
-                                        # mark matching lembretes as sent
-                                        pend = obter_lembretes_pendentes()
-                                        for p in pend:
-                                            if p.get('appointment_iso') == app_iso and p.get('telefone') == from_number:
-                                                try:
-                                                    marcar_lembrete_como_enviado(p['row'])
-                                                except Exception:
-                                                    logger.exception('[rem_handler] failed marking lembrete sent')
+                                        # remove matching lembretes
+                                        try:
+                                            remover = __import__('agenda_service').remover_lembretes_por_appointment
+                                            remover(app_iso, from_number)
+                                        except Exception:
+                                            logger.exception('[rem_handler] failed removing lembretes for appointment')
                                         continue
                                 except Exception:
                                     logger.exception('[webhook] error handling reminder interactive reply')
@@ -500,7 +563,8 @@ async def webhook(request: Request):
                         wf.sessoes[from_number] = wf.MENU_PRINCIPAL
                         try:
                             saud = f"Olá, {wf.sessoes.get(from_number + '_first_name', '')}!\n"
-                            send_menu_buttons(from_number, saud + wf.exibir_menu_principal())
+                            menu_text, menu_items = wf.exibir_menu_principal()
+                            send_menu_buttons(from_number, saud + menu_text, menu_items)
                         except Exception:
                             logger.exception('[webhook] Falha ao enviar menu inicial para usuário cadastrado')
                         # Após enviar o menu inicial, não processar a mesma mensagem novamente
@@ -533,7 +597,8 @@ async def webhook(request: Request):
                     wf.sessoes[from_number] = wf.MENU_PRINCIPAL
                     try:
                         saud = f"Olá, {wf.sessoes.get(from_number + '_first_name', '')}!\n"
-                        send_menu_buttons(from_number, saud + wf.exibir_menu_principal())
+                        menu_text, menu_items = wf.exibir_menu_principal()
+                        send_menu_buttons(from_number, saud + menu_text, menu_items)
                     except Exception:
                         logger.exception('[webhook] Falha ao enviar menu após cadastro')
                     continue
@@ -555,8 +620,12 @@ async def webhook(request: Request):
 
                 # Decide how to reply: prefer interactive when menu-like
                 # If the response contém as opções do menu principal, envia botões
-                if ("Agendar" in resposta and "Reagendar" in resposta and "Cancelar" in resposta) or resposta == wf.exibir_menu_principal():
-                    send_menu_buttons(from_number, resposta)  # envia botões do menu principal
+                menu_text, menu_items = wf.exibir_menu_principal()
+                # Verifica se a resposta contém o texto do menu (permite texto adicional antes)
+                if menu_text in resposta or (MSG.MENU_PROMPT in resposta and MSG.LIST_BODY_TEXT in resposta):
+                    # Ao reenviar o menu principal, prefira incluir saudação personalizada
+                    saud = f"Olá, {wf.sessoes.get(from_number + '_first_name', '')}!\n" if wf.sessoes.get(from_number + '_first_name') else ''
+                    send_menu_buttons(from_number, saud + menu_text, menu_items)  # envia lista/menu com saudação
                 # Some flow branches prepend extra text (e.g. "Escolha a nova data e horário:\n" + exibir_semanas...)
                 # so match more flexibly: if the response mentions 'escolha' and 'semana' or explicit 'nova data'
                 elif ('semana' in resposta.lower() and 'escolh' in resposta.lower()) or ('escolha a nova data' in resposta.lower()) or ('escolha a data' in resposta.lower() and 'horário' in resposta.lower()):
@@ -646,5 +715,22 @@ async def webhook(request: Request):
                     items.append(("9", "Cancelar", ""))  # Cancelar
                     send_list_times(from_number, 'Escolha o horário', items)  # envia lista de horários
                 else:
-                    send_text(from_number, resposta)  # envia resposta genérica em texto quando não há interativo aplicável
+                    # Se a resposta for uma indicação de "nenhum dia/horário disponível",
+                    # enviar botões interativos Voltar/Cancelar em vez de texto puro.
+                    try:
+                        # Se for mensagem de "nenhum dia/horário" ou informações de pagamento,
+                        # enviar botões Voltar/Cancelar para manter navegação guiada.
+                        is_no_days = (MSG.NO_DAYS_AVAILABLE in resposta) or resposta.startswith(MSG.NO_DAYS_AVAILABLE)
+                        is_no_hours = (MSG.NO_HOURS_AVAILABLE in resposta) or resposta.startswith(MSG.NO_HOURS_AVAILABLE)
+                        is_payment = (hasattr(MSG, 'PAYMENT_TITLE') and MSG.PAYMENT_TITLE in resposta) or (hasattr(MSG, 'PAYMENT_INFO') and MSG.PAYMENT_INFO in resposta)
+                        if is_payment:
+                            # Na tela de pagamento, só oferecemos Voltar (sem Cancelar)
+                            send_back_only_button(from_number, resposta)
+                        elif is_no_days or is_no_hours:
+                            send_back_cancel_buttons(from_number, resposta)
+                        else:
+                            send_text(from_number, resposta)  # envia resposta genérica em texto quando não há interativo aplicável
+                    except Exception:
+                        logger.exception('[webhook] falha ao enviar resposta de disponibilidade; enviando texto fallback')
+                        send_text(from_number, resposta)
     return {'status': 'received'}  # responde 200 OK ao remetente do webhook
