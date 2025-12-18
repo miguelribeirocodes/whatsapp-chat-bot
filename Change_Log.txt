@@ -1,2 +1,2 @@
-- Enviar mensagens automáticas avisando da consulta para a pessoa e para o dono da clínica (será definido dentro de uma variável qual o telefone do dono da clínica).
+- Correção do texto ao selecionar pra Cancelar que aparece "Seg, 22/12 16:00 \nSegunda-feira, 22/12/2025 16:00", sendo que deveria ser "Segunda-feira, 22/12/2025 16:00"
 - Consultar valores e formas de pagamentos dentro do menu principal.
