@@ -1,2 +1,6 @@
-- Correção do texto ao selecionar pra Cancelar que aparece "Seg, 22/12 16:00 \nSegunda-feira, 22/12/2025 16:00", sendo que deveria ser "Segunda-feira, 22/12/2025 16:00"
+- Correção do texto ao selecionar pra Cancelar que aparece "Seg, 22/12 16:00 \nSegunda-feira, 22/12/2025 16:00", sendo que deveria ser "Segunda-feira, 22/12/2025 16:00". Outra correção: caso o usuário reagende ou cancele uma consulta, o reminder da consulta remarcada/cancelada deve ser trocado/removido, porém a planilha persiste.
+- Como o chat vai reagir caso o usuário selecione um dia sem horários disponíveis? Ou nem vai aparecer o dia se não tiver horário?
 - Consultar valores e formas de pagamentos dentro do menu principal.
+
+- [18/12/2025] Removida opção "Sair" do menu principal para evitar encerramentos indesejados pelo usuário. Agora o menu principal apresenta apenas: Agendar, Reagendar e Cancelar.
+- [18/12/2025] Alterado fallback para entradas desconhecidas: o bot reenvia o menu principal em vez de responder "Funcionalidade em desenvolvimento", mantendo o usuário em um fluxo guiado.

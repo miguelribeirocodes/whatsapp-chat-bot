@@ -46,7 +46,6 @@ ESCOLHER_HORARIO = 'escolher_horario'
 CONFIRMAR = 'confirmar'
 CONFIRM_CANCEL = 'confirm_cancel'
 CONFIRM_CANCEL_APPOINTMENT = 'confirm_cancel_appointment'
-SAIR = 'sair'
 
 # Simulação de sessão do usuário (em produção, usar banco ou cache)
 sessoes = {}
@@ -57,7 +56,6 @@ def exibir_menu_principal():
         f"1️⃣ {MSG.MENU_AGENDAR}\n"
         f"2️⃣ {MSG.MENU_REAGENDAR}\n"
         f"3️⃣ {MSG.MENU_CANCELAR}\n"
-        f"4️⃣ {MSG.MENU_SAIR}\n"
     )
 
 def processar_mensagem(usuario_id, mensagem):
@@ -92,11 +90,10 @@ def processar_mensagem(usuario_id, mensagem):
             sessoes[usuario_id] = CANCELAR
             # trigger cancel flow initial listing
             return processar_mensagem(usuario_id, '')
-        elif mensagem == '4':
-            sessoes[usuario_id] = SAIR
-            return "Até logo!"
         else:
             return MSG.INVALID_OPTION + " Escolha uma das opções abaixo:\n" + exibir_menu_principal()
+    else:
+        return MSG.INVALID_OPTION + " Escolha uma das opções abaixo:\n" + exibir_menu_principal()
 
     if estado == AGENDAR:
         # Navegação entre semanas
@@ -417,7 +414,8 @@ def processar_mensagem(usuario_id, mensagem):
             sessoes[usuario_id] = MENU_PRINCIPAL
             return MSG.OPERATION_CANCELLED + "\n" + exibir_menu_principal()
 
-    return "Funcionalidade em desenvolvimento."
+    # Para entradas desconhecidas, reexibir o menu principal (loop amigável)
+    return exibir_menu_principal()
 
 
 # Função para exibir semanas disponíveis
