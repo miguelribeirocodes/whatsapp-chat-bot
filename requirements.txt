@@ -1,0 +1,9 @@
+joblib
+datetime
+typing
+numpy
+gspread
+python-dotenv
+requests
+fastapi
+scikit-learn

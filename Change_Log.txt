@@ -1,0 +1,2 @@
+- Enviar mensagens automáticas avisando da consulta para a pessoa e para o dono da clínica (será definido dentro de uma variável qual o telefone do dono da clínica).
+- Consultar valores e formas de pagamentos dentro do menu principal.
