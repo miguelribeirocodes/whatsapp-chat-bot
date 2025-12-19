@@ -648,7 +648,7 @@ Após executar todos os testes, verificar:
 - [ok] Resumo diário recebido
 
 ### **Sistema de Slots**
-- [ ] Slots criados automaticamente ao iniciar bot (30 dias)
+- [ok] Slots criados automaticamente ao iniciar bot (30 dias)
 - [ ] Scheduler diário funciona (slots adicionados à meia-noite)
 - [ ] Slots com FOLGA são respeitados (não listados, não sobrescritos)
 

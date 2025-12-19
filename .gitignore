@@ -3,4 +3,6 @@ old/
 __pycache__/
 service_account.json
 .env
+logs/
+.claude/
 *.pyc

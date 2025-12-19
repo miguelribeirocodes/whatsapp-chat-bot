@@ -875,3 +875,10 @@ async def webhook(request: Request):
                         logger.exception('[webhook] falha ao enviar resposta de disponibilidade; enviando texto fallback')
                         send_text(from_number, resposta)
     return {'status': 'received'}  # responde 200 OK ao remetente do webhook
+
+
+# Iniciar servidor apenas quando executado diretamente (não em imports)
+if __name__ == "__main__":
+    import uvicorn
+    logger.info("[main] Starting Uvicorn server on 0.0.0.0:8000")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
