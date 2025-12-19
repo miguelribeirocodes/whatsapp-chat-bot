@@ -15,7 +15,7 @@ WAIT_MSG = "Aguarde um momento, por favor."
 MENU_PROMPT = f"Sou a secretária virtual da {CLINIC_NAME}."
 MENU_AGENDAR = "Agendar"
 MENU_REAGENDAR = "Reagendar"
-MENU_CANCELAR = "Cancelar"
+MENU_CANCELAR = "Cancelar Agendamento"  # Renomeado para evitar confusão com "Cancelar operação"
 MENU_SAIR = "Sair"
 MENU_VALORES = "Valores e Pagamento"
 MENU_LIST_TITLE = "Outras opções"
@@ -37,17 +37,38 @@ LABEL_CANCEL_APPOINTMENT = "Cancelar Agendamento"
 HOURS_PROMPT = "Escolha o horário:" 
 
 # Confirmações
-CONFIRM_PROMPT_TEMPLATE = "Confirma {what}?\n1️⃣ Confirmar\n⬅️ Voltar"
-CONFIRM_CANCEL_APPOINTMENT_TEMPLATE = "Confirma o cancelamento do agendamento em {date} às {time}?\n1️⃣ Confirmar\n⬅️ Voltar"
-CONFIRM_AGENDAMENTO_TEMPLATE = "Confirma o agendamento para {date} às {time}?\n1️⃣ Confirmar\n⬅️ Voltar"
+CONFIRM_PROMPT_TEMPLATE = "Confirma {what}?"
+CONFIRM_CANCEL_APPOINTMENT_TEMPLATE = "Confirma o cancelamento do agendamento em {date} às {time}?"
+CONFIRM_AGENDAMENTO_TEMPLATE = "Confirma o agendamento para {date} às {time}?"
 
 # Rótulos de botões individuais
 LABEL_CONFIRM = "Confirmar"
 
-# Resultados
+# Resultados - Templates de confirmação
 # Template com nome do paciente: use `{name}` para inserir o primeiro nome
-AGENDAMENTO_CONFIRMADO = "Agendamento confirmado, {name}!"
-CANCEL_SUCCESS_TEMPLATE = "Agendamento em {date} às {time} cancelado com sucesso!"
+AGENDAMENTO_CONFIRMADO = "✅ Agendamento confirmado, {name}!"
+AGENDAMENTO_CONFIRMADO_FULL = """✅ Agendamento *confirmado* com sucesso!
+
+📅 Data: {date}
+🕐 Horário: {time}
+
+Você receberá um lembrete 24 horas antes da consulta.
+Até lá!"""
+
+REAGENDAMENTO_CONFIRMADO = """✅ Reagendamento *realizado* com sucesso!
+
+📅 Nova data: {date}
+🕐 Novo horário: {time}
+
+O agendamento anterior foi cancelado.
+Você receberá um lembrete 24 horas antes da consulta."""
+
+CANCEL_SUCCESS_TEMPLATE = """✅ Agendamento *cancelado* com sucesso!
+
+📅 Data: {date}
+🕐 Horário: {time}
+
+Se precisar reagendar, estou à disposição!"""
 
 # Outros
 NO_DAYS_AVAILABLE = "Nenhum dia disponível nesta semana." 
@@ -72,7 +93,32 @@ REMINDER_HOURS_BEFORE = 24
 REMINDER_TEMPLATE = "Lembrete: você tem uma consulta agendada em {date} às {time}."
 
 # Template de notificação enviada ao dono da clínica
-OWNER_REMINDER_TEMPLATE = "Novo agendamento: consulta em {date} às {time} para o paciente {patient}."
+OWNER_REMINDER_TEMPLATE = """📅 *NOVO AGENDAMENTO*
+
+👤 Paciente: {patient}
+📆 Data: {date}
+🕐 Horário: {time}
+
+Agendamento confirmado pelo WhatsApp."""
+
+OWNER_REMINDER_CANCEL_TEMPLATE = """❌ *CANCELAMENTO*
+
+👤 Paciente: {patient}
+📆 Data: {date}
+🕐 Horário: {time}
+
+Agendamento cancelado pelo WhatsApp."""
+
+OWNER_REMINDER_RESCHEDULE_TEMPLATE = """🔄 *REAGENDAMENTO*
+
+👤 Paciente: {patient}
+📆 Data anterior: {old_date}
+🕐 Horário anterior: {old_time}
+
+📆 *Nova data:* {new_date}
+🕐 *Novo horário:* {new_time}
+
+O agendamento anterior foi cancelado automaticamente."""
 
 # Horário do resumo diário para o dono (hora local, 24h)
 OWNER_DAILY_SUMMARY_HOUR = 7

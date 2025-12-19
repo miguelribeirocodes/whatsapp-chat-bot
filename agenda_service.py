@@ -552,6 +552,88 @@ def inicializar_slots_proximos_dias(num_dias: int = NUM_DIAS_GERAR_SLOTS):
         print("(DEBUG) Nenhum novo slot precisou ser criado (todos já existiam).")  # log indicando ausência de novos slots
 
 
+def adicionar_slots_dia_futuro():
+    """
+    Adiciona slots para o dia que está exatamente NUM_DIAS_GERAR_SLOTS dias no futuro.
+
+    Exemplo: Se NUM_DIAS_GERAR_SLOTS = 30 e hoje é 18/12/2025,
+    esta função adiciona slots para 17/01/2026 (daqui 30 dias).
+
+    Chamada diariamente pelo scheduler para manter uma janela deslizante.
+    RESPEITA slots com status "FOLGA" (inseridos manualmente pelo dono).
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    ws = obter_worksheet_agenda()                       # obtém worksheet da Agenda
+
+    # Carrega todos os slots existentes COM seus status
+    todos_valores = ws.get_all_values()
+    slots_existentes_com_status = {}  # {(data_str, hora_str): status}
+
+    for linha in todos_valores[1:]:  # Ignora cabeçalho
+        if len(linha) >= 6:
+            data_str = linha[1].strip()
+            hora_str = linha[2].strip()
+            status = linha[5].strip().upper()
+            if data_str and hora_str:
+                slots_existentes_com_status[(data_str, hora_str)] = status
+
+    hoje = date.today()                                 # obtém a data de hoje
+    dia_futuro = hoje + timedelta(days=NUM_DIAS_GERAR_SLOTS)  # calcula dia futuro
+
+    # Se não for dia útil, não há nada a fazer
+    if dia_futuro.weekday() not in DIAS_UTEIS:
+        logger.info('[daily_slots] Dia %s não é dia útil, pulando', dia_futuro.strftime('%d/%m/%Y'))
+        return
+
+    slots = gerar_slots_para_dia(dia_futuro)            # gera slots teóricos para esse dia
+    novas_linhas = []                                   # lista para acumular linhas novas
+
+    for slot in slots:                                  # percorre cada datetime de slot
+        data_str = slot.strftime("%d/%m/%Y")            # formata data como dd/mm/aaaa
+        hora_str = slot.strftime("%H:%M")               # formata hora como HH:MM
+
+        # Verifica se slot já existe
+        if (data_str, hora_str) in slots_existentes_com_status:
+            status_existente = slots_existentes_com_status[(data_str, hora_str)]
+            # Se o status for FOLGA, NÃO mexer (foi inserido manualmente)
+            if status_existente == "FOLGA":
+                logger.info('[daily_slots] Slot %s %s tem status FOLGA, mantendo', data_str, hora_str)
+                continue
+            # Se já existir com qualquer outro status, não criar duplicado
+            continue
+
+        weekday = dia_futuro.weekday()                  # índice do dia da semana
+        nome_dia = NOMES_DIAS_PT[weekday]               # nome do dia em português
+
+        nova_linha = [                                  # monta linha para esse slot
+            nome_dia,
+            data_str,
+            hora_str,
+            "",
+            "",
+            "DISPONIVEL",
+            "",
+            ""
+        ]
+        novas_linhas.append(nova_linha)                 # adiciona à lista de novas linhas
+
+    if novas_linhas:                                    # se há linhas novas para inserir
+        primeira_linha_vazia = len(ws.get_all_values()) + 1  # calcula primeira linha livre
+        ultimo_indice = primeira_linha_vazia + len(novas_linhas) - 1  # calcula última linha a preencher
+        intervalo = f"A{primeira_linha_vazia}:H{ultimo_indice}"       # monta intervalo A:H correto
+
+        ws.update(                                      # atualiza planilha em bloco
+            intervalo,
+            novas_linhas
+        )
+        logger.info('[daily_slots] Criados %d novos slots para %s', len(novas_linhas), data_str)
+    else:
+        logger.info('[daily_slots] Nenhum novo slot criado para %s (já existiam ou eram folgas)',
+                   dia_futuro.strftime('%d/%m/%Y'))
+
+
 def obter_slots_disponiveis_para_data(data_dia: date):
     """
     Lê a aba Agenda e retorna uma lista de datetime para os slots que:

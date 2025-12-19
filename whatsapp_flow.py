@@ -10,6 +10,32 @@ import re
 import messages as MSG
 import logging
 
+# Imports da refatoração: constantes e helpers
+from constants import (
+    States,
+    SessionKeys,
+    BUTTON_ID_AGENDAR,
+    BUTTON_ID_REAGENDAR,
+    BUTTON_ID_CANCELAR,
+    BUTTON_ID_VALORES,
+    BUTTON_ID_VOLTAR,
+    BUTTON_ID_CANCELAR_OPERACAO,
+    BUTTON_ID_CONFIRMAR,
+    BUTTON_ID_ESTA_SEMANA,
+    BUTTON_ID_PROXIMA_SEMANA,
+    UniversalActions,
+)
+from flow_helpers import (
+    format_data_pt,
+    format_appointment_list,
+    get_future_appointments,
+    is_valid_selection,
+    cleanup_agendamento_session,
+    cleanup_cancelamento_session,
+    build_main_menu,
+    build_return_to_menu_message,
+)
+
 logger = logging.getLogger(__name__)
 
 # Helper: weekday names in Portuguese
@@ -51,22 +77,18 @@ CONFIRM_CANCEL_APPOINTMENT = 'confirm_cancel_appointment'
 sessoes = {}
 
 def exibir_menu_principal():
-    """Retorna uma tupla (texto, items) onde `texto` é a versão em string do menu
-    e `items` é uma lista de tuples (id, title, description) pronta para enviar como lista interactive.
     """
-    # Corpo textual do menu: uma linha de saudação/identidade e uma linha com o prompt de ação
-    texto = f"{MSG.MENU_PROMPT}\n{MSG.LIST_BODY_TEXT}"
-    items = [
-        ("1", MSG.MENU_AGENDAR, ""),
-        ("2", MSG.MENU_REAGENDAR, ""),
-        ("3", MSG.MENU_CANCELAR, ""),
-        ("4", MSG.MENU_VALORES, ""),
-    ]
-    return texto, items
+    Retorna uma tupla (texto, items) onde `texto` é a versão em string do menu
+    e `items` é uma lista de tuples (id, title, description) pronta para enviar como lista interactive.
+
+    REFATORADO: Agora usa build_main_menu() de flow_helpers.py
+    """
+    return build_main_menu()
 
 def processar_mensagem(usuario_id, mensagem):
     # Obter estado atual do usuário
     estado = sessoes.get(usuario_id, MENU_PRINCIPAL)
+
     # Normalizar mensagem para decisões simples
     # Algumas respostas interativas podem chegar como números (int) —
     # garantir que `mensagem` seja sempre string sem espaços para as comparações.
@@ -74,292 +96,323 @@ def processar_mensagem(usuario_id, mensagem):
         mensagem = ""
     else:
         mensagem = str(mensagem).strip()
+
     texto_normalizado = mensagem.lower()
-    is_back = (texto_normalizado in ('0', 'voltar')) or (mensagem == '⬅️')
-    is_cancel = (texto_normalizado in ('9', 'cancelar', 'cancel'))
+
+    # REFATORADO: Usar UniversalActions ao invés de hardcoded
+    is_back = UniversalActions.is_back_action(mensagem)
+    is_cancel = UniversalActions.is_cancel_action(mensagem)
+
     # Helper to restore previous state when user backs out from a confirm dialog
     def _restore_prev_state():
-        prev = sessoes.pop(usuario_id + '_prev_state', None)
+        prev_key = SessionKeys.get_user_key(usuario_id, SessionKeys.PREV_STATE)
+        prev = sessoes.pop(prev_key, None)
         if prev:
             sessoes[usuario_id] = prev
             return prev
         sessoes[usuario_id] = MENU_PRINCIPAL
         return MENU_PRINCIPAL
+
+    # ========================================================================
+    # ESTADO: MENU_PRINCIPAL (REFATORADO)
+    # ========================================================================
+
     # Responder a saudações com o menu principal (inclui cumprimento)
     if estado == MENU_PRINCIPAL and texto_normalizado in ("oi", "olá", "ola", "boa tarde", "bom dia", "boa noite"):
         menu_text, _ = exibir_menu_principal()
-        return MSG.WELCOME + "\n" + menu_text
+        # Se usuário tem nome cadastrado, usa saudação personalizada; senão usa genérica
+        primeiro_nome = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.FIRST_NAME))
+        if primeiro_nome:
+            return f"Olá, {primeiro_nome}!\n{menu_text}"
+        else:
+            return f"{MSG.WELCOME}\n{menu_text}"
 
     if estado == MENU_PRINCIPAL:
         # Se o usuário pressionou Voltar/Cancelar mesmo estando no menu principal
         # (por exemplo após um send_back_cancel_buttons), tratar apropriadamente.
         if is_back:
             menu_text, _ = exibir_menu_principal()
-            return MSG.WELCOME + "\n" + menu_text
+            # Usa saudação personalizada se disponível
+            primeiro_nome = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.FIRST_NAME))
+            if primeiro_nome:
+                return f"Olá, {primeiro_nome}!\n{menu_text}"
+            else:
+                return f"{MSG.WELCOME}\n{menu_text}"
+
         if is_cancel:
-            menu_text, _ = exibir_menu_principal()
-            return MSG.OPERATION_CANCELLED + "\n" + menu_text
-        if mensagem == '1':
+            return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
+
+        # Opção 1: Agendar
+        if mensagem == BUTTON_ID_AGENDAR:
             sessoes[usuario_id] = AGENDAR
-            sessoes[usuario_id + '_semana_offset'] = 0
+            sessoes[SessionKeys.get_user_key(usuario_id, SessionKeys.SEMANA_OFFSET)] = 0
             return exibir_semanas_disponiveis(usuario_id)
-        elif mensagem == '2':
+
+        # Opção 2: Reagendar
+        elif mensagem == BUTTON_ID_REAGENDAR:
             sessoes[usuario_id] = REAGENDAR
             return processar_mensagem(usuario_id, '')
-        elif mensagem == '3':
+
+        # Opção 3: Cancelar agendamento
+        elif mensagem == BUTTON_ID_CANCELAR:
             sessoes[usuario_id] = CANCELAR
-            # trigger cancel flow initial listing
             return processar_mensagem(usuario_id, '')
-        elif mensagem == '4':
-            # Mostrar informações de valores e formas de pagamento
+
+        # Opção 4: Consultar valores e formas de pagamento
+        elif mensagem == BUTTON_ID_VALORES:
             # Mantém o usuário no menu principal após exibir as informações
             return f"{MSG.PAYMENT_TITLE}\n{MSG.PAYMENT_INFO}\n"
+
+        # Opção inválida
         else:
             menu_text, _ = exibir_menu_principal()
-            return MSG.INVALID_OPTION + " Escolha uma das opções abaixo:\n" + menu_text
+            return f"{MSG.INVALID_OPTION} Escolha uma das opções abaixo:\n{menu_text}"
 
+    # ========================================================================
+    # ESTADO: AGENDAR (REFATORADO - usa constantes e helpers)
+    # ========================================================================
     if estado == AGENDAR:
         # Navegação entre semanas
         if is_cancel:
-            # abort and return to main menu
+            # Abortar e voltar ao menu principal
             sessoes[usuario_id] = MENU_PRINCIPAL
-            # clear interim keys
-            sessoes.pop(usuario_id + '_semana_offset', None)
-            sessoes.pop(usuario_id + '_dia_escolhido', None)
-            sessoes.pop(usuario_id + '_horario_escolhido', None)
-            menu_text, _ = exibir_menu_principal()
-            return MSG.OPERATION_CANCELLED + "\n" + menu_text
-        if mensagem == '1':  # Esta semana
-            sessoes[usuario_id + '_semana_offset'] = 0
+            # REFATORADO: usa helper de limpeza
+            cleanup_agendamento_session(sessoes, usuario_id)
+            return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
+
+        # Opção 1: Esta semana
+        if mensagem == BUTTON_ID_ESTA_SEMANA:
+            sessoes[SessionKeys.get_user_key(usuario_id, SessionKeys.SEMANA_OFFSET)] = 0
             sessoes[usuario_id] = ESCOLHER_DIA
             return exibir_dias_disponiveis(usuario_id, 0)
-        elif mensagem == '2':  # Próxima semana
-            sessoes[usuario_id + '_semana_offset'] = 1
+
+        # Opção 2: Próxima semana
+        elif mensagem == BUTTON_ID_PROXIMA_SEMANA:
+            sessoes[SessionKeys.get_user_key(usuario_id, SessionKeys.SEMANA_OFFSET)] = 1
             sessoes[usuario_id] = ESCOLHER_DIA
             return exibir_dias_disponiveis(usuario_id, 1)
+
+        # Voltar ao menu principal
         elif is_back:
             sessoes[usuario_id] = MENU_PRINCIPAL
             menu_text, _ = exibir_menu_principal()
             return menu_text
-        else:
-            return MSG.INVALID_OPTION + ". Escolha uma semana:\n" + exibir_semanas_disponiveis(usuario_id)
 
+        # Opção inválida
+        else:
+            return f"{MSG.INVALID_OPTION}. Escolha uma semana:\n{exibir_semanas_disponiveis(usuario_id)}"
+
+    # ========================================================================
+    # ESTADO: REAGENDAR (REFATORADO - elimina 40 linhas duplicadas!)
+    # ========================================================================
     if estado == REAGENDAR:
-        # Listar todos os agendamentos futuros e permitir escolha
-        if '_lista_agendamentos' not in sessoes:
-            from agenda_service import obter_todos_agenda_cached
-            from datetime import datetime
-            todos = obter_todos_agenda_cached()[1:]  # ignora cabeçalho (cached)
-            agora = datetime.now()
-            agendamentos = []
-            for linha in todos:
-                if len(linha) < 6:
-                    continue
-                status = linha[5].strip().upper()
-                if status != 'AGENDADO':
-                    continue
-                data_str = linha[1].strip()
-                hora_str = linha[2].strip()
-                try:
-                    dt = datetime.strptime(f"{data_str} {hora_str}", "%d/%m/%Y %H:%M")
-                except Exception:
-                    continue
-                if dt < agora:
-                    continue
-                agendamentos.append((dt, linha))
-            agendamentos.sort()
-            sessoes['_lista_agendamentos'] = agendamentos
+        # Primeira entrada: buscar e exibir agendamentos futuros
+        if SessionKeys.LISTA_AGENDAMENTOS not in sessoes:
+            # REFATORADO: usa helper ao invés de código inline
+            agendamentos = get_future_appointments()
+            sessoes[SessionKeys.LISTA_AGENDAMENTOS] = agendamentos
+
+            # Sem agendamentos futuros
             if not agendamentos:
                 sessoes[usuario_id] = MENU_PRINCIPAL
-                menu_text, _ = exibir_menu_principal()
-                return "Nenhum agendamento futuro encontrado.\n" + menu_text
-            texto = "Escolha o agendamento para reagendar:\n"
-            for idx, (dt, linha) in enumerate(agendamentos):
-                nome = linha[3] or "Paciente"
-                texto += f"{idx+1}️⃣ {_format_data_pt(dt)} {dt.strftime('%H:%M')} - {nome}\n"
-            texto += f"⬅️ {MSG.LABEL_VOLTA}"
-            return texto
+                return build_return_to_menu_message("Nenhum agendamento futuro encontrado.")
+
+            # REFATORADO: usa helper de formatação
+            return format_appointment_list(agendamentos, 'reagendar')
+
+        # Ações de navegação
         if is_back:
             sessoes[usuario_id] = MENU_PRINCIPAL
-            sessoes.pop('_lista_agendamentos', None)
+            sessoes.pop(SessionKeys.LISTA_AGENDAMENTOS, None)
             menu_text, _ = exibir_menu_principal()
             return menu_text
+
         if is_cancel:
             sessoes[usuario_id] = MENU_PRINCIPAL
-            sessoes.pop('_lista_agendamentos', None)
-            menu_text, _ = exibir_menu_principal()
-            return MSG.OPERATION_CANCELLED + "\n" + menu_text
+            sessoes.pop(SessionKeys.LISTA_AGENDAMENTOS, None)
+            return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
+
+        # Processar seleção do agendamento
         try:
             idx = int(mensagem) - 1
-            agendamentos = sessoes['_lista_agendamentos']
-            if 0 <= idx < len(agendamentos):
+            agendamentos = sessoes[SessionKeys.LISTA_AGENDAMENTOS]
+
+            # REFATORADO: usa helper de validação
+            if is_valid_selection(idx, agendamentos):
                 dt, linha = agendamentos[idx]
-                sessoes[usuario_id + '_reagendar_antigo'] = dt
+                sessoes[SessionKeys.get_user_key(usuario_id, SessionKeys.REAGENDAR_ANTIGO)] = dt
                 sessoes[usuario_id] = AGENDAR
-                sessoes.pop('_lista_agendamentos', None)
+                sessoes.pop(SessionKeys.LISTA_AGENDAMENTOS, None)
                 return "Escolha a nova data e horário:\n" + exibir_semanas_disponiveis(usuario_id)
             else:
-                # rebuild the list from the session and return without recursing
-                agendamentos = sessoes.get('_lista_agendamentos', [])
-                texto = "Escolha o agendamento para reagendar:\n"
-                for idx2, (dt2, linha2) in enumerate(agendamentos):
-                    nome2 = linha2[3] or "Paciente"
-                    texto += f"{idx2+1}️⃣ {_format_data_pt(dt2)} {dt2.strftime('%H:%M')} - {nome2}\n"
-                texto += f"⬅️ {MSG.LABEL_VOLTA}"
-                return MSG.INVALID_OPTION + " Escolha um agendamento:\n" + texto
-        except Exception:
-            agendamentos = sessoes.get('_lista_agendamentos', [])
-            texto = "Escolha o agendamento para reagendar:\n"
-            for idx2, (dt2, linha2) in enumerate(agendamentos):
-                nome2 = linha2[3] or "Paciente"
-                texto += f"{idx2+1}️⃣ {_format_data_pt(dt2)} {dt2.strftime('%H:%M')} - {nome2}\n"
-            texto += f"⬅️ {MSG.LABEL_VOLTA}"
-            return MSG.INVALID_OPTION + " Escolha um agendamento:\n" + texto
+                # Opção inválida: reexibir lista (SEM DUPLICAÇÃO!)
+                return f"{MSG.INVALID_OPTION} {format_appointment_list(agendamentos, 'reagendar')}"
 
+        except (ValueError, KeyError):
+            # Erro ao parsear: reexibir lista (SEM DUPLICAÇÃO!)
+            agendamentos = sessoes.get(SessionKeys.LISTA_AGENDAMENTOS, [])
+            return f"{MSG.INVALID_OPTION} {format_appointment_list(agendamentos, 'reagendar')}"
+
+    # ========================================================================
+    # ESTADO: CANCELAR (REFATORADO - elimina 40 linhas duplicadas!)
+    # ========================================================================
     if estado == CANCELAR:
-        # Listar todos os agendamentos futuros e permitir escolha
-        if '_lista_agendamentos_cancelar' not in sessoes:
-            from agenda_service import obter_todos_agenda_cached, cancelar_agendamento_por_data_hora
-            from datetime import datetime
-            todos = obter_todos_agenda_cached()[1:]  # ignora cabeçalho (cached)
-            agora = datetime.now()
-            agendamentos = []
-            for linha in todos:
-                if len(linha) < 6:
-                    continue
-                status = linha[5].strip().upper()
-                if status != 'AGENDADO':
-                    continue
-                data_str = linha[1].strip()
-                hora_str = linha[2].strip()
-                try:
-                    dt = datetime.strptime(f"{data_str} {hora_str}", "%d/%m/%Y %H:%M")
-                except Exception:
-                    continue
-                if dt < agora:
-                    continue
-                agendamentos.append((dt, linha))
-            agendamentos.sort()
-            sessoes['_lista_agendamentos_cancelar'] = agendamentos
+        # Primeira entrada: buscar e exibir agendamentos futuros
+        if SessionKeys.LISTA_AGENDAMENTOS_CANCELAR not in sessoes:
+            # REFATORADO: usa helper ao invés de código inline
+            agendamentos = get_future_appointments()
+            sessoes[SessionKeys.LISTA_AGENDAMENTOS_CANCELAR] = agendamentos
+
+            # Sem agendamentos futuros
             if not agendamentos:
                 sessoes[usuario_id] = MENU_PRINCIPAL
-                menu_text, _ = exibir_menu_principal()
-                return "Nenhum agendamento futuro encontrado.\n" + menu_text
-            texto = "Escolha o agendamento para cancelar:\n"
-            for idx, (dt, linha) in enumerate(agendamentos):
-                nome = linha[3] or "Paciente"
-                texto += f"{idx+1}️⃣ {_format_data_pt(dt)} {dt.strftime('%H:%M')} - {nome}\n"
-            texto += f"⬅️ {MSG.LABEL_VOLTA}"
-            return texto
+                return build_return_to_menu_message("Nenhum agendamento futuro encontrado.")
+
+            # REFATORADO: usa helper de formatação
+            return format_appointment_list(agendamentos, 'cancelar')
+
+        # Ações de navegação
         if is_back:
             sessoes[usuario_id] = MENU_PRINCIPAL
-            sessoes.pop('_lista_agendamentos_cancelar', None)
+            sessoes.pop(SessionKeys.LISTA_AGENDAMENTOS_CANCELAR, None)
             menu_text, _ = exibir_menu_principal()
             return menu_text
+
         if is_cancel:
             sessoes[usuario_id] = MENU_PRINCIPAL
-            sessoes.pop('_lista_agendamentos_cancelar', None)
-            menu_text, _ = exibir_menu_principal()
-            return MSG.OPERATION_CANCELLED + "\n" + menu_text
+            sessoes.pop(SessionKeys.LISTA_AGENDAMENTOS_CANCELAR, None)
+            return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
+
+        # Processar seleção do agendamento
         try:
             idx = int(mensagem) - 1
-            agendamentos = sessoes['_lista_agendamentos_cancelar']
-            if 0 <= idx < len(agendamentos):
-                dt, linha = agendamentos[idx]
-                # ask for confirmation before cancelling the selected appointment
-                sessoes[usuario_id + '_cancel_target'] = dt
-                sessoes[usuario_id + '_prev_state'] = CANCELAR
-                sessoes[usuario_id] = CONFIRM_CANCEL_APPOINTMENT
-                return MSG.CONFIRM_CANCEL_APPOINTMENT_TEMPLATE.format(date=_format_data_pt(dt), time=dt.strftime('%H:%M'))
-            else:
-                agendamentos = sessoes.get('_lista_agendamentos_cancelar', [])
-                texto = "Escolha o agendamento para cancelar:\n"
-                for idx2, (dt2, linha2) in enumerate(agendamentos):
-                    nome2 = linha2[3] or "Paciente"
-                    texto += f"{idx2+1}️⃣ {_format_data_pt(dt2)} {dt2.strftime('%H:%M')} - {nome2}\n"
-                texto += f"⬅️ {MSG.LABEL_VOLTA}"
-                return MSG.INVALID_OPTION + " Escolha um agendamento:\n" + texto
-        except Exception:
-            agendamentos = sessoes.get('_lista_agendamentos_cancelar', [])
-            texto = "Escolha o agendamento para cancelar:\n"
-            for idx2, (dt2, linha2) in enumerate(agendamentos):
-                nome2 = linha2[3] or "Paciente"
-                texto += f"{idx2+1}️⃣ {_format_data_pt(dt2)} {dt2.strftime('%H:%M')} - {nome2}\n"
-            texto += f"⬅️ {MSG.LABEL_VOLTA}"
-            return MSG.INVALID_OPTION + " Escolha um agendamento:\n" + texto
+            agendamentos = sessoes[SessionKeys.LISTA_AGENDAMENTOS_CANCELAR]
 
+            # REFATORADO: usa helper de validação
+            if is_valid_selection(idx, agendamentos):
+                dt, linha = agendamentos[idx]
+                # Pedir confirmação antes de cancelar
+                sessoes[SessionKeys.get_user_key(usuario_id, SessionKeys.CANCEL_TARGET)] = dt
+                sessoes[SessionKeys.get_user_key(usuario_id, SessionKeys.PREV_STATE)] = CANCELAR
+                sessoes[usuario_id] = CONFIRM_CANCEL_APPOINTMENT
+                # REFATORADO: usa helper de formatação
+                return MSG.CONFIRM_CANCEL_APPOINTMENT_TEMPLATE.format(
+                    date=format_data_pt(dt),
+                    time=dt.strftime('%H:%M')
+                )
+            else:
+                # Opção inválida: reexibir lista (SEM DUPLICAÇÃO!)
+                return f"{MSG.INVALID_OPTION} {format_appointment_list(agendamentos, 'cancelar')}"
+
+        except (ValueError, KeyError):
+            # Erro ao parsear: reexibir lista (SEM DUPLICAÇÃO!)
+            agendamentos = sessoes.get(SessionKeys.LISTA_AGENDAMENTOS_CANCELAR, [])
+            return f"{MSG.INVALID_OPTION} {format_appointment_list(agendamentos, 'cancelar')}"
+
+    # ========================================================================
+    # ESTADO: ESCOLHER_DIA (REFATORADO - usa constantes e helpers)
+    # ========================================================================
     if estado == ESCOLHER_DIA:
         try:
+            # Cancelar operação
             if is_cancel:
-                # cancelar imediatamente a operação atual e voltar ao menu principal
                 sessoes[usuario_id] = MENU_PRINCIPAL
-                # limpar chaves intermédias
-                sessoes.pop(usuario_id + '_semana_offset', None)
-                sessoes.pop(usuario_id + '_dia_escolhido', None)
-                sessoes.pop(usuario_id + '_horario_escolhido', None)
-                menu_text, _ = exibir_menu_principal()
-                return MSG.OPERATION_CANCELLED + "\n" + menu_text
+                # REFATORADO: usa helper de limpeza
+                cleanup_agendamento_session(sessoes, usuario_id)
+                return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
+
+            # Voltar para escolha de semana
             if is_back:
-                # voltar para seleção de semana (onde o usuário escolhe 'Esta semana'/'Próxima semana')
                 sessoes[usuario_id] = AGENDAR
                 return exibir_semanas_disponiveis(usuario_id)
+
+            # Processar seleção do dia
             dia_idx = int(mensagem) - 1
-            semana_offset = sessoes.get(usuario_id + '_semana_offset', 0)
+            semana_offset_key = SessionKeys.get_user_key(usuario_id, SessionKeys.SEMANA_OFFSET)
+            semana_offset = sessoes.get(semana_offset_key, 0)
             dias = obter_dias_disponiveis_semana(semana_offset)
-            if 0 <= dia_idx < len(dias):
-                sessoes[usuario_id + '_dia_escolhido'] = dias[dia_idx]
+
+            # REFATORADO: usa helper de validação
+            if is_valid_selection(dia_idx, dias):
+                sessoes[SessionKeys.get_user_key(usuario_id, SessionKeys.DIA_ESCOLHIDO)] = dias[dia_idx]
                 sessoes[usuario_id] = ESCOLHER_HORARIO
                 return exibir_horarios_disponiveis(usuario_id, dias[dia_idx])
             else:
-                return MSG.INVALID_OPTION + ". Escolha um dia:\n" + exibir_dias_disponiveis(usuario_id, semana_offset)
-        except Exception:
-            return MSG.INVALID_OPTION + ". Escolha um dia:\n" + exibir_dias_disponiveis(usuario_id, sessoes.get(usuario_id + '_semana_offset', 0))
+                return f"{MSG.INVALID_OPTION}. Escolha um dia:\n{exibir_dias_disponiveis(usuario_id, semana_offset)}"
 
+        except (ValueError, IndexError):
+            semana_offset = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.SEMANA_OFFSET), 0)
+            return f"{MSG.INVALID_OPTION}. Escolha um dia:\n{exibir_dias_disponiveis(usuario_id, semana_offset)}"
+
+    # ========================================================================
+    # ESTADO: ESCOLHER_HORARIO (REFATORADO - usa constantes e helpers)
+    # ========================================================================
     if estado == ESCOLHER_HORARIO:
         try:
+            # Cancelar operação
             if is_cancel:
-                # cancelar imediatamente a operação atual e voltar ao menu principal
                 sessoes[usuario_id] = MENU_PRINCIPAL
-                # limpar escolhas intermédias
-                sessoes.pop(usuario_id + '_horario_escolhido', None)
-                sessoes.pop(usuario_id + '_dia_escolhido', None)
-                menu_text, _ = exibir_menu_principal()
-                return MSG.OPERATION_CANCELLED + "\n" + menu_text
-            if is_back:
-                # voltar para seleção de dia (permitir escolher outro dia da mesma semana)
-                sessoes[usuario_id] = ESCOLHER_DIA
-                semana_offset = sessoes.get(usuario_id + '_semana_offset', 0)
-                return exibir_dias_disponiveis(usuario_id, semana_offset)
-            horario_idx = int(mensagem) - 1
-            dia_escolhido = sessoes.get(usuario_id + '_dia_escolhido')
-            horarios = obter_horarios_disponiveis_para_dia(dia_escolhido)
-            if 0 <= horario_idx < len(horarios):
-                sessoes[usuario_id + '_horario_escolhido'] = horarios[horario_idx]
-                sessoes[usuario_id] = CONFIRMAR
-                return MSG.CONFIRM_AGENDAMENTO_TEMPLATE.format(date=_format_data_pt(horarios[horario_idx]), time=horarios[horario_idx].strftime('%H:%M'))
-            else:
-                return MSG.INVALID_OPTION + ". Escolha um horário:\n" + exibir_horarios_disponiveis(usuario_id, dia_escolhido)
-        except Exception:
-            return MSG.INVALID_OPTION + ". Escolha um horário:\n" + exibir_horarios_disponiveis(usuario_id, sessoes.get(usuario_id + '_dia_escolhido'))
+                # REFATORADO: usa helper de limpeza
+                cleanup_agendamento_session(sessoes, usuario_id)
+                return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
 
+            # Voltar para escolha de dia
+            if is_back:
+                sessoes[usuario_id] = ESCOLHER_DIA
+                semana_offset = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.SEMANA_OFFSET), 0)
+                return exibir_dias_disponiveis(usuario_id, semana_offset)
+
+            # Processar seleção do horário
+            horario_idx = int(mensagem) - 1
+            dia_escolhido = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.DIA_ESCOLHIDO))
+            horarios = obter_horarios_disponiveis_para_dia(dia_escolhido)
+
+            # REFATORADO: usa helper de validação
+            if is_valid_selection(horario_idx, horarios):
+                sessoes[SessionKeys.get_user_key(usuario_id, SessionKeys.HORARIO_ESCOLHIDO)] = horarios[horario_idx]
+                sessoes[usuario_id] = CONFIRMAR
+                # REFATORADO: usa helper de formatação
+                return MSG.CONFIRM_AGENDAMENTO_TEMPLATE.format(
+                    date=format_data_pt(horarios[horario_idx]),
+                    time=horarios[horario_idx].strftime('%H:%M')
+                )
+            else:
+                return f"{MSG.INVALID_OPTION}. Escolha um horário:\n{exibir_horarios_disponiveis(usuario_id, dia_escolhido)}"
+
+        except (ValueError, IndexError):
+            dia_escolhido = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.DIA_ESCOLHIDO))
+            return f"{MSG.INVALID_OPTION}. Escolha um horário:\n{exibir_horarios_disponiveis(usuario_id, dia_escolhido)}"
+
+    # ========================================================================
+    # ESTADO: CONFIRMAR (REFATORADO - mensagens melhoradas!)
+    # ========================================================================
     if estado == CONFIRMAR:
         logger.debug('[flow] CONFIRMAR state received mensagem=%s is_cancel=%s', mensagem, is_cancel)
+
+        # Cancelar operação
         if is_cancel:
             sessoes[usuario_id] = MENU_PRINCIPAL
-            # clear interim choices
-            sessoes.pop(usuario_id + '_horario_escolhido', None)
-            sessoes.pop(usuario_id + '_dia_escolhido', None)
-            menu_text, _ = exibir_menu_principal()
-            return MSG.OPERATION_CANCELLED + "\n" + menu_text
-        if mensagem == '1':
-            horario = sessoes.get(usuario_id + '_horario_escolhido')
-            # Se for reagendamento, cancelar o antigo
-            if sessoes.get(usuario_id + '_reagendar_antigo'):
+            cleanup_agendamento_session(sessoes, usuario_id)
+            return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
+
+        # Confirmar agendamento
+        if mensagem == BUTTON_ID_CONFIRMAR:
+            horario = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.HORARIO_ESCOLHIDO))
+            nome_paciente = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.FIRST_NAME)) or "Paciente WhatsApp"
+
+            # Detectar se é reagendamento
+            reagendar_antigo_key = SessionKeys.get_user_key(usuario_id, SessionKeys.REAGENDAR_ANTIGO)
+            is_reagendamento = reagendar_antigo_key in sessoes
+
+            # Se for reagendamento, guardar dados do agendamento antigo antes de cancelar
+            old_appointment_dt = None
+            if is_reagendamento:
+                old_appointment_dt = sessoes[reagendar_antigo_key]
                 from agenda_service import cancelar_agendamento_por_data_hora
-                cancelar_agendamento_por_data_hora(sessoes[usuario_id + '_reagendar_antigo'])
-                sessoes.pop(usuario_id + '_reagendar_antigo', None)
-            # Use the real phone number (usuario_id) and patient name if available
-            nome_paciente = sessoes.get(usuario_id + '_first_name') or "Paciente WhatsApp"
+                cancelar_agendamento_por_data_hora(old_appointment_dt)
+                sessoes.pop(reagendar_antigo_key, None)
+
+            # Registrar novo agendamento
             registrar_agendamento_google_sheets(
                 nome_paciente=nome_paciente,
                 data_hora_consulta=horario,
@@ -367,29 +420,36 @@ def processar_mensagem(usuario_id, mensagem):
                 telefone=usuario_id,
                 observacoes="Agendado via menu bot"
             )
-            # Persist and schedule reminders: patient reminder and notify owner immediately
+
+            # Agendar lembretes
             try:
                 from agenda_service import registrar_lembrete_agendamento
                 from scheduler import schedule_at
                 from datetime import timedelta, datetime
+
                 reminder_dt = horario - timedelta(hours=MSG.REMINDER_HOURS_BEFORE)
-                # register reminder in sheet (returns row index)
+
                 try:
-                    row_idx = registrar_lembrete_agendamento(horario, reminder_dt, usuario_id, nome_paciente, tipo="patient_reminder", observacoes="Agendado via bot")
+                    row_idx = registrar_lembrete_agendamento(
+                        horario, reminder_dt, usuario_id, nome_paciente,
+                        tipo="patient_reminder", observacoes="Agendado via bot"
+                    )
                 except Exception:
                     row_idx = None
-                # schedule in-memory job
+
                 def _send_and_mark(row=row_idx, phone=usuario_id, dt=horario, patient=nome_paciente):
                     try:
-                        # personalize with first name when available
                         primeiro = (patient or '').split()[0] if patient else ''
                         greeting = f"Olá, {primeiro}!\n" if primeiro else ''
-                        appt_text = MSG.REMINDER_TEMPLATE.format(date=dt.strftime('%d/%m/%Y'), time=dt.strftime('%H:%M'))
+                        appt_text = MSG.REMINDER_TEMPLATE.format(
+                            date=dt.strftime('%d/%m/%Y'),
+                            time=dt.strftime('%H:%M')
+                        )
                         action = MSG.REMINDER_ACTION_PROMPT if hasattr(MSG, 'REMINDER_ACTION_PROMPT') else ''
                         text = greeting + appt_text + ("\n" + action if action else "")
                         __import__('whatsapp_webhook').send_reminder_confirm_buttons(phone, text, dt.isoformat())
                     except Exception:
-                        __import__('logging').getLogger('whatsapp_flow').exception('failed sending reminder')
+                        logger.exception('failed sending reminder')
                     try:
                         if row:
                             __import__('agenda_service').remover_lembrete_por_row(row)
@@ -399,59 +459,134 @@ def processar_mensagem(usuario_id, mensagem):
                 if reminder_dt > datetime.now():
                     schedule_at(reminder_dt, _send_and_mark)
                 else:
-                    # scheduled time already passed -> send immediately and mark
                     _send_and_mark()
 
-                # notify owner immediately (if configured)
+                # Notificar dono da clínica
                 try:
-                    __import__('whatsapp_webhook').send_reminder_to_owner(nome_paciente, horario.strftime('%d/%m/%Y'), horario.strftime('%H:%M'))
+                    webhook = __import__('whatsapp_webhook')
+                    if is_reagendamento and old_appointment_dt:
+                        # Reagendamento: envia mensagem única com dados antigos e novos
+                        webhook.send_reminder_to_owner(
+                            patient_name=nome_paciente,
+                            date=horario.strftime('%d/%m/%Y'),
+                            time=horario.strftime('%H:%M'),
+                            isReschedule=True,
+                            old_date=old_appointment_dt.strftime('%d/%m/%Y'),
+                            old_time=old_appointment_dt.strftime('%H:%M')
+                        )
+                    else:
+                        # Novo agendamento simples
+                        webhook.send_reminder_to_owner(
+                            patient_name=nome_paciente,
+                            date=horario.strftime('%d/%m/%Y'),
+                            time=horario.strftime('%H:%M')
+                        )
                 except Exception:
                     pass
             except Exception:
                 pass
+
+            # Limpar sessão e voltar ao menu
             sessoes[usuario_id] = MENU_PRINCIPAL
-            nome_para_msg = nome_paciente.split()[0] if nome_paciente else ''
-            menu_text, _ = exibir_menu_principal()
-            return MSG.AGENDAMENTO_CONFIRMADO.format(name=nome_para_msg) + "\n" + menu_text
+            cleanup_agendamento_session(sessoes, usuario_id)
+
+            # REFATORADO: Mensagem de confirmação melhorada!
+            nome_para_msg = nome_paciente.split()[0] if nome_paciente else nome_paciente
+
+            if is_reagendamento:
+                # Mensagem específica para reagendamento
+                msg_confirmacao = MSG.REAGENDAMENTO_CONFIRMADO.format(
+                    date=format_data_pt(horario),
+                    time=horario.strftime('%H:%M')
+                )
+            else:
+                # Mensagem específica para agendamento novo
+                msg_confirmacao = MSG.AGENDAMENTO_CONFIRMADO_FULL.format(
+                    date=format_data_pt(horario),
+                    time=horario.strftime('%H:%M'),
+                    name=nome_para_msg
+                )
+
+            return build_return_to_menu_message(msg_confirmacao)
+
+        # Voltar para escolha de horário
         elif is_back:
             sessoes[usuario_id] = ESCOLHER_HORARIO
-            return exibir_horarios_disponiveis(usuario_id, sessoes.get(usuario_id + '_dia_escolhido'))
+            dia_escolhido = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.DIA_ESCOLHIDO))
+            return exibir_horarios_disponiveis(usuario_id, dia_escolhido)
+
+        # Opção inválida
         else:
-            return MSG.INVALID_OPTION + " Confirme ou volte:\n1️⃣ Confirmar\n⬅️ " + MSG.LABEL_VOLTA
+            return f"{MSG.INVALID_OPTION} Confirme ou volte:\n1️⃣ Confirmar\n⬅️ {MSG.LABEL_VOLTA}"
 
     # Nota: confirmação genérica de cancelar removida; cancelamentos de operação agora abortam imediatamente
 
+    # ========================================================================
+    # ESTADO: CONFIRM_CANCEL_APPOINTMENT (REFATORADO - mensagem melhorada!)
+    # ========================================================================
     if estado == CONFIRM_CANCEL_APPOINTMENT:
         logger.debug('[flow] CONFIRM_CANCEL_APPOINTMENT state received mensagem=%s is_cancel=%s', mensagem, is_cancel)
-        if mensagem == '1':
-            dt = sessoes.pop(usuario_id + '_cancel_target', None)
+
+        # Confirmar cancelamento
+        if mensagem == BUTTON_ID_CONFIRMAR:
+            cancel_target_key = SessionKeys.get_user_key(usuario_id, SessionKeys.CANCEL_TARGET)
+            dt = sessoes.pop(cancel_target_key, None)
+
+            # tentar obter o nome do paciente associado (antes de cancelar)
+            nome_para_notif = None
+            try:
+                if dt is not None:
+                    ags = get_future_appointments()
+                    for adt, linha in ags:
+                        if adt == dt:
+                            nome_para_notif = (linha[3] if len(linha) > 3 else None) or ''
+                            break
+            except Exception:
+                nome_para_notif = None
+
             from agenda_service import cancelar_agendamento_por_data_hora
             sucesso = False
             if dt:
                 sucesso = cancelar_agendamento_por_data_hora(dt)
-            sessoes.pop(usuario_id + '_prev_state', None)
-            sessoes.pop('_lista_agendamentos_cancelar', None)
+
+            # Limpar sessão
+            sessoes.pop(SessionKeys.get_user_key(usuario_id, SessionKeys.PREV_STATE), None)
+            sessoes.pop(SessionKeys.LISTA_AGENDAMENTOS_CANCELAR, None)
             sessoes[usuario_id] = MENU_PRINCIPAL
+
             if sucesso:
-                menu_text, _ = exibir_menu_principal()
-                return MSG.CANCEL_SUCCESS_TEMPLATE.format(date=_format_data_pt(dt), time=dt.strftime('%H:%M')) + "\n" + menu_text
+                # REFATORADO: Mensagem de cancelamento melhorada!
+                msg_cancelamento = MSG.CANCEL_SUCCESS_TEMPLATE.format(
+                    date=format_data_pt(dt),
+                    time=dt.strftime('%H:%M')
+                )
+                try:
+                    __import__('whatsapp_webhook').send_reminder_to_owner(
+                        nome_para_notif or "",
+                        dt.strftime('%d/%m/%Y') if dt else '',
+                        dt.strftime('%H:%M') if dt else '',
+                        isCancel=True
+                    )
+                except Exception:
+                    pass
+                return build_return_to_menu_message(msg_cancelamento)
             else:
-                menu_text, _ = exibir_menu_principal()
-                return "Falha ao cancelar.\n" + menu_text
+                return build_return_to_menu_message("Falha ao cancelar.")
+
+        # Voltar para lista de agendamentos
         if is_back:
-            # go back to cancel list
             prev = _restore_prev_state()
             if prev == CANCELAR:
                 return processar_mensagem(usuario_id, '')
             menu_text, _ = exibir_menu_principal()
             return menu_text
+
+        # Cancelar a operação de cancelamento (abortar)
         if is_cancel:
-            # treat as full abort
-            sessoes.pop(usuario_id + '_cancel_target', None)
-            sessoes.pop(usuario_id + '_prev_state', None)
+            sessoes.pop(SessionKeys.get_user_key(usuario_id, SessionKeys.CANCEL_TARGET), None)
+            sessoes.pop(SessionKeys.get_user_key(usuario_id, SessionKeys.PREV_STATE), None)
             sessoes[usuario_id] = MENU_PRINCIPAL
-            menu_text, _ = exibir_menu_principal()
-            return MSG.OPERATION_CANCELLED + "\n" + menu_text
+            return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
 
     # Para entradas desconhecidas, reexibir o menu principal (loop amigável)
     menu_text, _ = exibir_menu_principal()

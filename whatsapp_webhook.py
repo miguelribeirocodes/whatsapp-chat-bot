@@ -30,6 +30,17 @@ import scheduler
 
 app = FastAPI()  # instancia FastAPI
 
+# -------------------------------------------------------
+# Inicialização de slots na startup
+# -------------------------------------------------------
+try:
+    from agenda_service import inicializar_slots_proximos_dias, NUM_DIAS_GERAR_SLOTS
+    logger.info('[startup] Inicializando slots para os próximos %d dias...', NUM_DIAS_GERAR_SLOTS)
+    inicializar_slots_proximos_dias()
+    logger.info('[startup] Slots inicializados com sucesso!')
+except Exception:
+    logger.exception('[startup] Falha ao inicializar slots na agenda')
+
 
 def send_text(to: str, text: str):
     headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}  # headers para autorização e content-type
@@ -59,14 +70,50 @@ def send_reminder(to: str, text: str):
         raise
 
 
-def send_reminder_to_owner(patient_name: str, date: str, time: str):
-    """Send notification to clinic owner if configured in messages.py"""
+def send_reminder_to_owner(patient_name: str, date: str, time: str, isCancel: bool = False,
+                           isReschedule: bool = False, old_date: str = None, old_time: str = None):
+    """
+    Send notification to clinic owner if configured in messages.py
+
+    Args:
+        patient_name: Nome do paciente
+        date: Data do agendamento (novo, ou do cancelamento)
+        time: Horário do agendamento (novo, ou do cancelamento)
+        isCancel: Se True, envia mensagem de cancelamento
+        isReschedule: Se True, envia mensagem de reagendamento (requer old_date e old_time)
+        old_date: Data do agendamento anterior (usado apenas em reagendamento)
+        old_time: Horário do agendamento anterior (usado apenas em reagendamento)
+    """
     owner = MSG.CLINIC_OWNER_PHONE
     if not owner:
         logger.info("[send_reminder_to_owner] No CLINIC_OWNER_PHONE configured; skipping owner notification")
         return None
-    text = MSG.OWNER_REMINDER_TEMPLATE.format(patient=patient_name, date=date, time=time)
+
     try:
+        if isReschedule and old_date and old_time:
+            # Reagendamento: mensagem única com info antiga e nova
+            text = MSG.OWNER_REMINDER_RESCHEDULE_TEMPLATE.format(
+                patient=patient_name,
+                old_date=old_date,
+                old_time=old_time,
+                new_date=date,
+                new_time=time
+            )
+        elif isCancel:
+            # Cancelamento simples
+            text = MSG.OWNER_REMINDER_CANCEL_TEMPLATE.format(
+                patient=patient_name,
+                date=date,
+                time=time
+            )
+        else:
+            # Novo agendamento
+            text = MSG.OWNER_REMINDER_TEMPLATE.format(
+                patient=patient_name,
+                date=date,
+                time=time
+            )
+
         return send_text(owner, text)
     except Exception:
         logger.exception("[send_reminder_to_owner] Failed to notify owner %s", owner)
@@ -131,6 +178,47 @@ try:
 except Exception:
     logger.exception('[webhook] Failed to schedule daily owner summary')
 
+# Schedule daily slot creation to maintain rolling window
+try:
+    _daily_slots_created_dates = set()
+
+    def _daily_add_future_slots():
+        """
+        Adiciona slots para o dia que está NUM_DIAS_GERAR_SLOTS dias no futuro.
+        Mantém janela deslizante de slots disponíveis.
+        """
+        try:
+            from agenda_service import adicionar_slots_dia_futuro
+            from datetime import datetime
+            hoje = datetime.now().strftime('%d/%m/%Y')
+
+            if hoje in _daily_slots_created_dates:
+                logger.info('[daily_slots] slots already created for %s, skipping', hoje)
+                return
+
+            logger.info('[daily_slots] Adding future slots for rolling window...')
+            adicionar_slots_dia_futuro()
+            _daily_slots_created_dates.add(hoje)
+            logger.info('[daily_slots] Future slots added successfully')
+        except Exception:
+            logger.exception('[daily_slots] error while adding future slots')
+
+    # Agendar para rodar à meia-noite todos os dias (00:01)
+    scheduler.schedule_daily(0, 1, _daily_add_future_slots)
+
+    # Se já passou da meia-noite e ainda não rodou hoje, rodar agora
+    try:
+        from datetime import datetime
+        now = datetime.now()
+        hoje = now.strftime('%d/%m/%Y')
+        if hoje not in _daily_slots_created_dates:
+            logger.info('[daily_slots] Running initial slot creation for today')
+            _daily_add_future_slots()
+    except Exception:
+        logger.exception('[daily_slots] error when checking immediate slot creation')
+except Exception:
+    logger.exception('[webhook] Failed to schedule daily slot creation')
+
 # (startup pending reminders logic is executed after helper functions are defined)
 
 
@@ -161,6 +249,20 @@ def send_menu_buttons(to: str, text: str, items: list = None):
     except Exception:
         header_text = MSG.MENU_LIST_TITLE
 
+    # Determina o corpo (body) da lista interativa. Se o `text` contiver múltiplas
+    # linhas (ex: cumpriment0 + MENU_PROMPT + LIST_BODY_TEXT), usamos a parte
+    # após a primeira quebra de linha como corpo para preservar o prompt.
+    body_text = MSG.LIST_BODY_TEXT
+    try:
+        if isinstance(text, str):
+            if '\n' in text:
+                body_text = text.split('\n', 1)[1].strip() or MSG.LIST_BODY_TEXT
+            else:
+                # se não houver quebra, use o próprio texto (se não vazio)
+                body_text = text.strip() or MSG.LIST_BODY_TEXT
+    except Exception:
+        body_text = MSG.LIST_BODY_TEXT
+
     sections = [{"title": MSG.MENU_LIST_TITLE, "rows": []}]
     # rows: id, title, description — use `items` se fornecido, caso contrário use padrão
     if items and isinstance(items, list):
@@ -179,10 +281,10 @@ def send_menu_buttons(to: str, text: str, items: list = None):
         "messaging_product": "whatsapp",
         "to": to,
         "type": "interactive",
-        "interactive": {
+            "interactive": {
             "type": "list",
             "header": {"type": "text", "text": header_text},
-            "body": {"text": MSG.LIST_BODY_TEXT},
+            "body": {"text": body_text},
             "action": {"button": MSG.LIST_BUTTON_LABEL, "sections": sections}
         }
     }
@@ -621,11 +723,50 @@ async def webhook(request: Request):
                 # Decide how to reply: prefer interactive when menu-like
                 # If the response contém as opções do menu principal, envia botões
                 menu_text, menu_items = wf.exibir_menu_principal()
+
+                # IMPORTANT: Detect if response contains BOTH confirmation message AND menu
+                # If yes, send confirmation as text first, then menu buttons separately
+                has_menu = menu_text in resposta or (MSG.MENU_PROMPT in resposta and MSG.LIST_BODY_TEXT in resposta)
+                has_confirmation = '✅' in resposta and any(word in resposta for word in ['confirmado', 'realizado', 'cancelado'])
+
+                if has_menu and has_confirmation:
+                    # Split confirmation from menu: send confirmation first as text
+                    try:
+                        # Find where menu starts in the response
+                        menu_start_idx = resposta.find(MSG.MENU_PROMPT)
+                        if menu_start_idx > 0:
+                            confirmation_part = resposta[:menu_start_idx].strip()
+                            # Send confirmation message as text
+                            send_text(from_number, confirmation_part)
+                            # Then send menu buttons with greeting
+                            saud = f"Olá, {wf.sessoes.get(from_number + '_first_name', '')}!\n" if wf.sessoes.get(from_number + '_first_name') else ''
+                            send_menu_buttons(from_number, saud + menu_text, menu_items)
+                        else:
+                            # Fallback: just send as text if we can't split properly
+                            send_text(from_number, resposta)
+                    except Exception:
+                        logger.exception('[webhook] Failed to split confirmation and menu; sending as text')
+                        send_text(from_number, resposta)
                 # Verifica se a resposta contém o texto do menu (permite texto adicional antes)
-                if menu_text in resposta or (MSG.MENU_PROMPT in resposta and MSG.LIST_BODY_TEXT in resposta):
-                    # Ao reenviar o menu principal, prefira incluir saudação personalizada
+                elif menu_text in resposta or (MSG.MENU_PROMPT in resposta and MSG.LIST_BODY_TEXT in resposta):
+                    # Ao reenviar o menu principal, envie primeiro qualquer texto que
+                    # venha antes do menu (ex: mensagem de confirmação/aviso), depois
+                    # envie os botões com a saudação + menu.
                     saud = f"Olá, {wf.sessoes.get(from_number + '_first_name', '')}!\n" if wf.sessoes.get(from_number + '_first_name') else ''
-                    send_menu_buttons(from_number, saud + menu_text, menu_items)  # envia lista/menu com saudação
+                    # procurar início do menu na resposta (prefere o menu_text)
+                    menu_start_idx = resposta.find(menu_text)
+                    if menu_start_idx == -1:
+                        menu_start_idx = resposta.find(MSG.MENU_PROMPT)
+                    # se houver texto antes do menu, enviá-lo como texto simples
+                    if menu_start_idx > 0:
+                        prefix = resposta[:menu_start_idx].strip()
+                        try:
+                            if prefix:
+                                send_text(from_number, prefix)
+                        except Exception:
+                            logger.exception('[webhook] Failed to send prefix before menu')
+                    # finalmente, enviar os botões com a saudação + menu
+                    send_menu_buttons(from_number, saud + menu_text, menu_items)
                 # Some flow branches prepend extra text (e.g. "Escolha a nova data e horário:\n" + exibir_semanas...)
                 # so match more flexibly: if the response mentions 'escolha' and 'semana' or explicit 'nova data'
                 elif ('semana' in resposta.lower() and 'escolh' in resposta.lower()) or ('escolha a nova data' in resposta.lower()) or ('escolha a data' in resposta.lower() and 'horário' in resposta.lower()):
