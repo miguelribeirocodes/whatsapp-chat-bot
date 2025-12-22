@@ -1,5 +1,3 @@
-Faltando dar commit nas refatorações e incluir verificação diária de slots disponíveis. Não foi concluído por ter estourado os tokens da IA.
-
 Obs.: usar o "GUIA_DESENVOLVEDOR.md" para a IA entender melhor como fazer alterações no projeto.
 
 **REFATORAÇÃO (18/12/2025):**
@@ -17,6 +15,8 @@ Obs.: usar o "GUIA_DESENVOLVEDOR.md" para a IA entender melhor como fazer altera
 - [18/12/2025] Função `send_reminder_to_owner()` atualizada (`whatsapp_webhook.py:73-120`) para suportar três tipos de notificação: novo agendamento, cancelamento simples, e reagendamento (com dados antigos e novos na mesma mensagem). Aceita novos parâmetros: `isReschedule`, `old_date`, `old_time`.
 - [18/12/2025] Fluxo de reagendamento atualizado (`whatsapp_flow.py:397-475`): agora guarda os dados do agendamento antigo ANTES de cancelar (linha 400) e envia notificação completa de reagendamento ao dono com informações antigas e novas (linhas 457-466).
 - [19/12/2025] Corrigida saudação duplicada para usuários cadastrados (`whatsapp_flow.py:121-140`): quando usuário já cadastrado envia saudação como "Oi", agora responde apenas com "Olá, [Nome]!" ao invés de "Olá! Seja bem-vindo(a)!" seguido de "Olá, [Nome]!". A mensagem genérica WELCOME agora só é usada para usuários não cadastrados.
+- [22/12/2025] **Configuração como serviço Windows**: Adicionado bloco `if __name__ == "__main__"` com `uvicorn.run()` no final de `whatsapp_webhook.py` (linhas 881-884) para permitir execução como serviço Windows. Antes, o script executava a inicialização mas terminava imediatamente, causando loop de reinicializações.
+- [22/12/2025] **Guia de serviço Windows simplificado**: Reescrito `CONFIGURAR_SERVICO_WINDOWS.md` focando exclusivamente no método NSSM, removendo métodos alternativos. Documento agora inclui parâmetros corretos validados na prática (Python real vs alias Windows Store, conta de usuário vs Local System), troubleshooting dos 6 problemas principais encontrados durante configuração, e script de atualização simplificado.
 
 - [18/12/2025] Removida opção "Sair" do menu principal para evitar encerramentos indesejados pelo usuário. Agora o menu principal apresenta apenas: Agendar, Reagendar e Cancelar Agendamento.
 - [18/12/2025] Alterado fallback para entradas desconhecidas: o bot reenvia o menu principal em vez de responder "Funcionalidade em desenvolvimento", mantendo o usuário em um fluxo guiado.
@@ -25,3 +25,8 @@ Obs.: usar o "GUIA_DESENVOLVEDOR.md" para a IA entender melhor como fazer altera
 - [18/12/2025] Corrigido bug de processamento de respostas interativas: normalização de `mensagem` em `processar_mensagem` (`whatsapp_flow.py`) para aceitar ids numéricos vindos do webhook (ex.: `1`, `2`, `3`). Isso resolve casos em que respostas por botão não eram reconhecidas.
 - [18/12/2025] Ao cancelar o próximo agendamento por telefone (`cancelar_proximo_agendamento_por_telefone` em `agenda_service.py`), agora marcamos lembretes relacionados na aba `Lembretes` como enviados para evitar reenvios após reinício do serviço.
 - [18/12/2025] Adicionada proteção para caso a linha de cabeçalho da aba `Agenda` seja deletada: `obter_worksheet_agenda()` agora verifica os cabeçalhos esperados e, se ausentes ou incorretos, insere a linha de cabeçalho no topo (fallback: sobrescrever `A1:H1`).
+
+Próximos passos:
+
+- Sistema de logging mais limpo, configurável e com data e hora
+- Comprar chip e criar conta no whatsapp business
