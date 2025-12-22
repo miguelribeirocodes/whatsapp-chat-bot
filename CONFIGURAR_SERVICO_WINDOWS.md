@@ -1,344 +1,216 @@
-# Configurar Bot como Serviço do Windows
+# Configurar Bot como Serviço do Windows usando NSSM
 
-Este guia mostra como configurar o bot de agendamento para rodar automaticamente como um serviço do Windows.
+Este guia mostra como configurar o bot de agendamento para rodar automaticamente como um serviço do Windows usando NSSM (Non-Sucking Service Manager).
 
-## Método 1: Usando NSSM (Recomendado)
+## Pré-requisitos
 
-NSSM (Non-Sucking Service Manager) é a forma mais simples de transformar qualquer aplicação em serviço do Windows.
+- Windows 10 ou superior
+- Python 3.11 instalado
+- Bot já testado e funcionando manualmente
+- Permissões de Administrador
 
-### Passo 1: Baixar NSSM
+---
+
+## Passo 1: Baixar e Instalar NSSM
 
 1. Acesse: https://nssm.cc/download
 2. Baixe a versão mais recente (ex: nssm-2.24.zip)
 3. Extraia o arquivo ZIP
-4. Copie `nssm.exe` da pasta `win64` para uma localização permanente (ex: `C:\nssm\nssm.exe`)
+4. Copie `nssm.exe` da pasta `win64` para `C:\Tools\nssm\nssm.exe`
+5. Adicione `C:\Tools\nssm` ao PATH do Windows (opcional, facilita uso)
 
-### Passo 2: Criar o Serviço
+---
 
-Abra o **Prompt de Comando como Administrador** e execute:
+## Passo 2: Encontrar o Caminho Real do Python
+
+**IMPORTANTE:** O Python precisa ser o executável REAL, não o alias da Windows Store.
+
+Abra o Prompt de Comando e execute:
 
 ```cmd
-cd C:\nssm
-nssm install WhatsAppAgendadorBot
+python -c "import sys; print(sys.executable)"
 ```
 
-Uma janela GUI será aberta. Configure:
+Exemplo de saída:
+```
+C:\Users\User\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\python.exe
+```
 
-**Aba Application:**
-- **Path**: Caminho completo do Python (ex: `C:\Python311\python.exe`)
-  - Para encontrar: execute `where python` no cmd
-- **Startup directory**: `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador`
-- **Arguments**: `whatsapp_webhook.py`
+**Copie este caminho completo** - você vai precisar dele na configuração.
 
-**Aba Details:**
-- **Display name**: `WhatsApp Agendador Bot`
-- **Description**: `Bot de agendamento via WhatsApp para Clínica X`
-- **Startup type**: `Automatic` (inicia com Windows)
+---
 
-**Aba Log on:**
-- Deixe como padrão (Local System account) OU
-- Use sua conta de usuário se precisar acessar arquivos do OneDrive
-
-**Aba I/O:**
-- **Output (stdout)**: `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs\service_output.log`
-- **Error (stderr)**: `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs\service_error.log`
-
-Clique em **Install service**.
-
-### Passo 3: Criar Pasta de Logs
+## Passo 3: Criar Pasta de Logs
 
 ```cmd
 mkdir "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs"
 ```
 
-### Passo 4: Gerenciar o Serviço
+---
 
-**Iniciar o serviço:**
+## Passo 4: Configurar o Serviço com NSSM
+
+Abra o **Prompt de Comando como Administrador** e execute:
+
 ```cmd
+cd C:\Tools\nssm
+nssm install WhatsAppAgendadorBot
+```
+
+Uma janela GUI será aberta. Configure **EXATAMENTE** desta forma:
+
+### Aba Application
+
+- **Path:** Cole o caminho real do Python obtido no Passo 2
+  - Exemplo: `C:\Users\User\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\python.exe`
+  - ⚠️ **NÃO use:** `C:\Users\User\AppData\Local\Microsoft\WindowsApps\python.exe` (não funciona em serviços)
+
+- **Startup directory:** `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador`
+
+- **Arguments:** `whatsapp_webhook.py`
+
+### Aba Details
+
+- **Display name:** `WhatsApp Agendador Bot`
+- **Description:** `Bot de agendamento via WhatsApp`
+- **Startup type:** `Automatic` (para iniciar com o Windows)
+
+### Aba Log on
+
+⚠️ **IMPORTANTE:** Não use "Local System account"
+
+- Selecione: **"This account"**
+- **Account:** `.\User` (ou seu nome de usuário do Windows)
+- **Password:** [sua senha do Windows]
+- **Confirm:** [sua senha do Windows novamente]
+
+**Por quê?** A conta Local System não tem acesso aos arquivos do OneDrive, credentials.json e .env.
+
+### Aba I/O
+
+- **Output (stdout):** `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs\service_output.log`
+- **Error (stderr):** `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs\service_error.log`
+
+### Aba File rotation (opcional, mas recomendado)
+
+- **Rotate files:** Marque
+- **Restrict rotation to files bigger than:** `10240` KB (10MB)
+- **Replace existing Output and Error files:** Marque
+
+Clique em **Install service**.
+
+---
+
+## Passo 5: Iniciar o Serviço
+
+No Prompt de Comando como Administrador:
+
+```cmd
+cd C:\Tools\nssm
 nssm start WhatsAppAgendadorBot
 ```
 
-**Parar o serviço:**
-```cmd
-nssm stop WhatsAppAgendadorBot
-```
+Aguarde 5-10 segundos e verifique o status:
 
-**Reiniciar o serviço:**
-```cmd
-nssm restart WhatsAppAgendadorBot
-```
-
-**Ver status:**
 ```cmd
 nssm status WhatsAppAgendadorBot
 ```
 
-**Remover o serviço:**
-```cmd
-nssm remove WhatsAppAgendadorBot confirm
-```
-
-**Editar configuração:**
-```cmd
-nssm edit WhatsAppAgendadorBot
-```
-
-### Passo 5: Verificar Logs
-
-Após iniciar, verifique os arquivos de log:
-- `logs\service_output.log` - saída normal do programa
-- `logs\service_error.log` - erros e exceções
-
-Procure pela linha:
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000
-```
-
-Se aparecer, o serviço está funcionando!
+Deve retornar: `SERVICE_RUNNING`
 
 ---
 
-## Método 2: Usando Gerenciador de Tarefas do Windows
+## Passo 6: Verificar se Está Funcionando
 
-Alternativa mais simples para testes, mas menos robusta.
-
-### Criar Script de Inicialização
-
-1. Crie um arquivo `iniciar_bot.bat`:
-
-```batch
-@echo off
-cd /d "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador"
-python whatsapp_webhook.py >> logs\bot.log 2>&1
-```
-
-2. Salve em: `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\iniciar_bot.bat`
-
-### Configurar no Agendador de Tarefas
-
-1. Abra **Agendador de Tarefas** (Task Scheduler)
-2. Clique em **Criar Tarefa Básica**
-3. Nome: `WhatsApp Bot Agendador`
-4. Gatilho: **Quando o computador iniciar**
-5. Ação: **Iniciar um programa**
-6. Programa: `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\iniciar_bot.bat`
-7. Marque: **Executar com privilégios mais altos**
-8. Na aba **Configurações**, marque: **Se a tarefa falhar, reiniciar a cada: 1 minuto**
-
----
-
-## Método 3: Usando Windows Services (Avançado)
-
-Para criar um serviço Windows nativo em Python, usando `pywin32`.
-
-### Instalar pywin32
-
-```cmd
-pip install pywin32
-```
-
-### Criar arquivo de serviço
-
-Crie `whatsapp_service.py`:
-
-```python
-import win32serviceutil
-import win32service
-import win32event
-import servicemanager
-import socket
-import sys
-import os
-import subprocess
-import time
-
-class WhatsAppBotService(win32serviceutil.ServiceFramework):
-    _svc_name_ = "WhatsAppAgendadorBot"
-    _svc_display_name_ = "WhatsApp Agendador Bot"
-    _svc_description_ = "Serviço de agendamento via WhatsApp para Clínica X"
-
-    def __init__(self, args):
-        win32serviceutil.ServiceFramework.__init__(self, args)
-        self.stop_event = win32event.CreateEvent(None, 0, 0, None)
-        self.running = True
-        self.process = None
-
-    def SvcStop(self):
-        self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
-        win32event.SetEvent(self.stop_event)
-        self.running = False
-        if self.process:
-            self.process.terminate()
-
-    def SvcDoRun(self):
-        servicemanager.LogMsg(
-            servicemanager.EVENTLOG_INFORMATION_TYPE,
-            servicemanager.PYS_SERVICE_STARTED,
-            (self._svc_name_, '')
-        )
-        self.main()
-
-    def main(self):
-        # Diretório do projeto
-        project_dir = r"c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador"
-        os.chdir(project_dir)
-
-        # Executar whatsapp_webhook.py
-        while self.running:
-            try:
-                self.process = subprocess.Popen(
-                    [sys.executable, "whatsapp_webhook.py"],
-                    cwd=project_dir,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
-                )
-
-                # Aguardar até o serviço ser parado
-                while self.running:
-                    if self.process.poll() is not None:
-                        # Processo terminou inesperadamente, reiniciar
-                        time.sleep(5)
-                        break
-                    time.sleep(1)
-
-            except Exception as e:
-                servicemanager.LogErrorMsg(f"Erro no serviço: {str(e)}")
-                time.sleep(10)
-
-if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        servicemanager.Initialize()
-        servicemanager.PrepareToHostSingle(WhatsAppBotService)
-        servicemanager.StartServiceCtrlDispatcher()
-    else:
-        win32serviceutil.HandleCommandLine(WhatsAppBotService)
-```
-
-### Instalar o serviço
+### Verificar logs:
 
 ```cmd
 cd "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador"
-python whatsapp_service.py install
+powershell -Command "Get-Content 'logs\service_error.log' -Tail 30"
 ```
 
-### Gerenciar o serviço
+**Procure por estas linhas no final do log:**
 
-```cmd
-# Iniciar
-python whatsapp_service.py start
+✅ `INFO:     Uvicorn running on http://0.0.0.0:8000` - Servidor iniciou com sucesso
+✅ `[startup] Slots inicializados com sucesso!` - Slots carregados
+✅ `[scheduler] Scheduled job` - Jobs agendados
 
-# Parar
-python whatsapp_service.py stop
+**NÃO deve ter:**
+❌ `KeyboardInterrupt`
+❌ `Exception`
+❌ `Error`
+❌ Loop de reinicializações repetidas
 
-# Reiniciar
-python whatsapp_service.py restart
+### Testar o bot:
 
-# Remover
-python whatsapp_service.py remove
-```
-
-Ou use `services.msc` (Serviços do Windows) para gerenciar visualmente.
+Envie uma mensagem "Oi" para o número do WhatsApp configurado e veja se o bot responde.
 
 ---
 
-## Recomendação
+## Comandos Úteis de Gerenciamento
 
-Para **testes iniciais**: Use **Método 1 (NSSM)** - é o mais simples e confiável.
+Todos os comandos devem ser executados como Administrador em `C:\Tools\nssm`:
 
-Para **produção**: Continue com NSSM ou migre para **Método 3** se precisar de mais controle.
+```cmd
+# Ver status
+nssm status WhatsAppAgendadorBot
+
+# Parar serviço
+nssm stop WhatsAppAgendadorBot
+
+# Iniciar serviço
+nssm start WhatsAppAgendadorBot
+
+# Reiniciar serviço
+nssm restart WhatsAppAgendadorBot
+
+# Editar configuração
+nssm edit WhatsAppAgendadorBot
+
+# Remover serviço
+nssm remove WhatsAppAgendadorBot confirm
+
+# Ver últimas 20 linhas do log de erro
+powershell -Command "Get-Content 'c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs\service_error.log' -Tail 20"
+
+# Ver últimas 50 linhas do log de output
+powershell -Command "Get-Content 'c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs\service_output.log' -Tail 50"
+```
 
 ---
 
 ## Atualizar o Código do Serviço
 
-Quando você fizer alterações no código ou atualizar via Git, siga este processo para aplicar as mudanças no serviço rodando.
+Quando você fizer alterações no código ou atualizar via Git:
 
-### Processo Completo de Atualização
-
-**1. Parar o serviço**
+### Processo Manual
 
 ```cmd
+# 1. Parar o serviço
 nssm stop WhatsAppAgendadorBot
-```
 
-Ou, se estiver usando Método 3 (pywin32):
-```cmd
-python whatsapp_service.py stop
-```
-
-**2. Aplicar as atualizações**
-
-**Opção A: Via Git (Recomendado)**
-
-```cmd
+# 2. Atualizar código
 cd "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador"
 git pull origin main
-```
 
-**Opção B: Edição Manual**
-
-- Faça suas alterações nos arquivos `.py` usando seu editor
-- Salve todas as mudanças
-- Certifique-se de que não há erros de sintaxe
-
-**Opção C: Aplicar Patch Específico**
-
-Se você recebeu um arquivo `.patch`:
-
-```cmd
-cd "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador"
-git apply nome_do_patch.patch
-```
-
-**3. Atualizar dependências (se necessário)**
-
-Se o `requirements.txt` foi modificado ou você adicionou novas bibliotecas:
-
-```cmd
-cd "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador"
+# 3. Atualizar dependências (se necessário)
 pip install -r requirements.txt --upgrade
-```
 
-**4. Testar manualmente (RECOMENDADO)**
-
-Antes de reiniciar o serviço, teste se o código está funcionando:
-
-```cmd
+# 4. Testar manualmente antes de subir (RECOMENDADO)
 python whatsapp_webhook.py
-```
+# Aguarde ver "Uvicorn running on http://0.0.0.0:8000"
+# Pressione Ctrl+C para parar
 
-Verifique se:
-- O servidor inicia sem erros
-- Aparece a mensagem: `INFO:     Uvicorn running on http://0.0.0.0:8000`
-- Não há exceções no console
-
-Pressione `Ctrl+C` para parar o teste manual.
-
-**5. Reiniciar o serviço**
-
-```cmd
+# 5. Reiniciar serviço
 nssm start WhatsAppAgendadorBot
+
+# 6. Verificar logs
+powershell -Command "Get-Content 'logs\service_error.log' -Tail 20"
 ```
 
-Ou, se estiver usando Método 3:
-```cmd
-python whatsapp_service.py start
-```
+### Script Automatizado
 
-**6. Verificar os logs**
-
-```cmd
-type "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs\service_output.log"
-```
-
-Procure por:
-- `INFO:     Uvicorn running on http://0.0.0.0:8000` (servidor iniciou)
-- `[startup] Slots inicializados com sucesso!` (slots carregaram)
-- Sem linhas de `ERROR` ou `EXCEPTION`
-
-### Script Rápido de Atualização
-
-Crie um arquivo `atualizar_servico.bat` para automatizar o processo:
+Crie o arquivo `atualizar_servico.bat`:
 
 ```batch
 @echo off
@@ -347,31 +219,26 @@ echo  ATUALIZANDO WHATSAPP BOT
 echo ========================================
 echo.
 
-echo [1/6] Parando servico...
+echo [1/5] Parando servico...
 nssm stop WhatsAppAgendadorBot
 timeout /t 3 /nobreak >nul
 
-echo [2/6] Atualizando codigo via Git...
+echo [2/5] Atualizando codigo via Git...
 cd /d "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador"
 git pull origin main
 
-echo [3/6] Atualizando dependencias...
+echo [3/5] Atualizando dependencias...
 pip install -r requirements.txt --upgrade --quiet
 
-echo [4/6] Testando codigo...
-echo Pressione Ctrl+C se aparecer algum erro
-timeout /t 2 /nobreak >nul
-start /wait cmd /c "python whatsapp_webhook.py & timeout /t 5"
-
-echo [5/6] Reiniciando servico...
+echo [4/5] Reiniciando servico...
 nssm start WhatsAppAgendadorBot
-timeout /t 2 /nobreak >nul
+timeout /t 5 /nobreak >nul
 
-echo [6/6] Verificando logs...
+echo [5/5] Verificando status e logs...
 nssm status WhatsAppAgendadorBot
 echo.
-echo Ultimas linhas do log:
-powershell -Command "Get-Content 'logs\service_output.log' -Tail 10"
+echo Ultimas 15 linhas do log:
+powershell -Command "Get-Content 'logs\service_error.log' -Tail 15"
 
 echo.
 echo ========================================
@@ -380,138 +247,155 @@ echo ========================================
 pause
 ```
 
-Salve como: `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\atualizar_servico.bat`
+Salve em: `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\atualizar_servico.bat`
 
-Para usar, execute como **Administrador**.
-
-### Rollback em Caso de Problemas
-
-Se a atualização causou problemas, você pode reverter:
-
-**Via Git:**
-
-```cmd
-# Ver commits recentes
-git log --oneline -5
-
-# Voltar para o commit anterior
-git reset --hard HEAD~1
-
-# Ou voltar para um commit específico
-git reset --hard <hash-do-commit>
-
-# Reiniciar o serviço
-nssm restart WhatsAppAgendadorBot
-```
-
-**Backup Manual:**
-
-Sempre mantenha um backup antes de atualizar:
-
-```cmd
-# Criar backup antes da atualização
-xcopy "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador" "c:\Backups\ChatBot_%date%_%time:~0,2%%time:~3,2%" /E /I /H
-
-# Para restaurar
-xcopy "c:\Backups\ChatBot_<data>" "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador" /E /I /H /Y
-```
-
-### Atualizações Sem Downtime (Zero Downtime)
-
-Para atualizações críticas sem parar o serviço:
-
-1. **Clone o repositório em outra pasta**:
-```cmd
-git clone <url-repo> "c:\ChatBot_Staging"
-cd c:\ChatBot_Staging
-```
-
-2. **Aplique e teste as mudanças na staging**:
-```cmd
-git checkout <branch-com-mudancas>
-pip install -r requirements.txt
-python whatsapp_webhook.py
-```
-
-3. **Se tudo OK, pare o serviço e copie os arquivos**:
-```cmd
-nssm stop WhatsAppAgendadorBot
-xcopy "c:\ChatBot_Staging\*.py" "c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador" /Y
-nssm start WhatsAppAgendadorBot
-```
-
-### Checklist de Atualização
-
-Antes de atualizar, verifique:
-
-- [ ] Você tem backup do código atual
-- [ ] Você commitou todas as mudanças locais importantes
-- [ ] Não há agendamentos críticos acontecendo no momento
-- [ ] Você testou as mudanças em ambiente de desenvolvimento
-- [ ] O `requirements.txt` está atualizado (se mudou dependências)
-
-Após atualizar, verifique:
-
-- [ ] O serviço iniciou sem erros
-- [ ] Os logs não mostram exceções
-- [ ] Uma mensagem de teste para o bot funciona
-- [ ] O agendamento funciona normalmente
-- [ ] Os schedulers diários estão rodando (`[daily_slots]`, `[reminder_check]`)
+Para usar: Clique com botão direito > **Executar como administrador**
 
 ---
 
 ## Solução de Problemas
 
-### Serviço não inicia
+### Problema 1: "Acesso negado" ao executar comandos NSSM
 
-1. Verifique os logs em `logs\service_error.log`
-2. Teste manualmente: `python whatsapp_webhook.py`
-3. Verifique se todas as dependências estão instaladas
-4. Confirme que o arquivo `.env` está no diretório correto
+**Causa:** Não está rodando como Administrador
 
-### Serviço inicia mas não responde
+**Solução:**
+- Feche o Prompt de Comando
+- Pressione Windows, digite `cmd`
+- Clique com botão direito > "Executar como administrador"
 
-1. Verifique se a porta 8000 está livre: `netstat -ano | findstr :8000`
-2. Verifique firewall do Windows
-3. Confirme que o webhook do WhatsApp está apontando para o endereço correto
+---
 
-### Google Sheets não funciona
+### Problema 2: Serviço para imediatamente após iniciar
 
-1. Verifique se `credentials.json` está no diretório
-2. Se usando Local System account, mude para sua conta de usuário no NSSM
-3. Execute manualmente uma vez para gerar `token.json`
+**Causa:** Caminho do Python está errado (usando alias da Windows Store)
 
-### Scheduler não executa tarefas diárias
+**Solução:**
+```cmd
+# Obter caminho correto
+python -c "import sys; print(sys.executable)"
 
-1. Verifique os logs: busque por `[daily_slots]` ou `[reminder_check]`
-2. Confirme que o serviço está rodando continuamente
-3. Teste manualmente as funções no código
+# Atualizar NSSM
+nssm stop WhatsAppAgendadorBot
+nssm set WhatsAppAgendadorBot Application "<caminho-correto-aqui>"
+nssm start WhatsAppAgendadorBot
+```
+
+---
+
+### Problema 3: Erro "Can't open service!"
+
+**Causa:** Serviço não existe ou nome está errado
+
+**Solução:**
+```cmd
+# Listar todos os serviços NSSM
+sc query type= service state= all | findstr /i "whatsapp"
+
+# Se não aparecer, precisa instalar novamente:
+nssm install WhatsAppAgendadorBot
+```
+
+---
+
+### Problema 4: Google Sheets não funciona (erro de autenticação)
+
+**Causa:** Serviço rodando com conta Local System que não tem acesso aos arquivos
+
+**Solução:**
+```cmd
+nssm edit WhatsAppAgendadorBot
+```
+- Vá na aba "Log on"
+- Mude para "This account"
+- Digite sua conta de usuário e senha
+- Clique "Edit service"
+- Reinicie o serviço
+
+---
+
+### Problema 5: Token do WhatsApp expira (erro 401)
+
+**Causa:** Access Token do WhatsApp tem validade de 60 dias
+
+**Solução:**
+1. Acesse o Facebook Developers
+2. Gere um novo token permanente
+3. Atualize no arquivo `.env`
+4. Reinicie o serviço:
+```cmd
+nssm restart WhatsAppAgendadorBot
+```
+
+---
+
+### Problema 6: Serviço fica reiniciando em loop
+
+**Causa:** Arquivo `whatsapp_webhook.py` não tem o bloco `if __name__ == "__main__"` com `uvicorn.run()`
+
+**Verificar:** O final do arquivo deve ter:
+```python
+if __name__ == "__main__":
+    import uvicorn
+    logger.info("[main] Starting Uvicorn server on 0.0.0.0:8000")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
 
 ---
 
 ## Monitoramento
 
-Para monitorar o serviço em produção:
+### Ver logs em tempo real:
 
-1. **Visualizador de Eventos** (Event Viewer):
-   - Windows Logs > Application
-   - Procure por eventos do serviço
+```cmd
+powershell -Command "Get-Content 'c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\logs\service_error.log' -Wait -Tail 20"
+```
 
-2. **Logs do aplicativo**:
-   - `logs\service_output.log`
-   - `logs\service_error.log`
+Pressione `Ctrl+C` para sair.
 
-3. **Monitor de performance**:
-   - Task Manager > Aba Serviços
-   - Procure por "WhatsAppAgendadorBot"
+### Verificar se porta 8000 está em uso:
+
+```cmd
+netstat -ano | findstr :8000
+```
+
+### Ver serviço no Gerenciador de Serviços do Windows:
+
+1. Pressione `Windows + R`
+2. Digite `services.msc`
+3. Procure por "WhatsApp Agendador Bot"
+4. Clique com botão direito > Propriedades para ver detalhes
 
 ---
 
-## Próximos Passos Após Configurar
+## Checklist de Validação
 
-1. ✅ Teste enviar uma mensagem para o bot
-2. ✅ Verifique se o agendamento funciona
-3. ✅ Confirme que os lembretes são enviados no horário correto
-4. ✅ Teste o scheduler de slots (aguarde até 00:01 ou force manualmente)
-5. ✅ Configure backup automático do Google Sheets
-6. ✅ Configure monitoramento de uptime (ex: UptimeRobot)
+Após configurar o serviço, confirme:
+
+- [ ] `nssm status WhatsAppAgendadorBot` retorna `SERVICE_RUNNING`
+- [ ] Log mostra `INFO:     Uvicorn running on http://0.0.0.0:8000`
+- [ ] Log mostra `[startup] Slots inicializados com sucesso!`
+- [ ] Não há exceções ou erros nos logs
+- [ ] Bot responde a mensagens de teste no WhatsApp
+- [ ] Schedulers estão rodando (procure por `[scheduler]` nos logs)
+- [ ] Serviço reinicia automaticamente após reiniciar o computador
+
+---
+
+## Próximos Passos
+
+1. ✅ Configure backup automático do código (Git)
+2. ✅ Configure backup do Google Sheets (Google Takeout ou Apps Script)
+3. ✅ Documente o processo de renovação do token do WhatsApp
+4. ✅ Configure monitoramento de uptime (ex: UptimeRobot, Pingdom)
+5. ✅ Teste o comportamento em caso de falha (reinício automático)
+
+---
+
+## Notas Importantes
+
+- O serviço inicia automaticamente com o Windows (se configurado como Automatic)
+- Logs são rotacionados automaticamente quando atingem 10MB (se configurado)
+- O scheduler diário roda à meia-noite (00:01) para criar novos slots
+- O resumo diário é enviado às 07:00
+- Lembretes são enviados 24h antes do agendamento às 10:00
