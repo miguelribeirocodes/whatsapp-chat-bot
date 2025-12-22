@@ -632,11 +632,11 @@ def exibir_horarios_disponiveis(usuario_id, data_dia):
     texto += f"⬅️ {MSG.LABEL_VOLTA}"
     return texto
 
-from agenda_service import registrar_agendamento_google_sheets
+from src.agenda_service import registrar_agendamento_google_sheets
 
 # Exemplo de uso (simulação)
 if __name__ == "__main__":
-    from agenda_service import inicializar_slots_proximos_dias
+    from src.agenda_service import inicializar_slots_proximos_dias
     print("(Aguarde, preparando agenda de slots disponíveis...)\n")
     inicializar_slots_proximos_dias()
     usuario = 'user1'

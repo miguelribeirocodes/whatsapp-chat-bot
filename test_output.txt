@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador\tests\test_fluxo_conversacional.py", line 29, in <module>
+    from src.whatsapp_flow import processar_mensagem, sessoes as flow_sessoes
+ModuleNotFoundError: No module named 'src'

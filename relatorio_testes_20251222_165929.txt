@@ -1,0 +1,194 @@
+================================================================================
+RELATÓRIO DE TESTES DO FLUXO CONVERSACIONAL
+================================================================================
+Data/Hora: 2025-12-22 16:59:29
+Total de testes: 10
+[PASSOU] 0
+[FALHOU] 10
+
+================================================================================
+RESUMO
+================================================================================
+Taxa de sucesso: 0.0%
+
+================================================================================
+DETALHES DOS TESTES
+================================================================================
+
+[1] [FALHOU] - Menu principal -> Agendar -> Voltar -> Menu
+    Sequencia: 1 -> 9
+    [ERRO] ModuleNotFoundError: No module named 'constants'
+    Detalhes: Falhou na entrada '9': ModuleNotFoundError: No module named 'constants'
+
+[2] [FALHOU] - Menu principal -> Agendar -> Semana -> Dia -> Horário -> Confirmar
+    Sequencia: 1 -> 1 -> 1
+               ... (5 inputs no total)
+    [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+    Detalhes: Falhou na entrada '1': ModuleNotFoundError: No module named 'agenda_service'
+
+[3] [FALHOU] - Menu -> Cancelar (sem agendamentos)
+    Sequencia: 3
+    [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+    Detalhes: Falhou na entrada '3': ModuleNotFoundError: No module named 'agenda_service'
+
+[4] [FALHOU] - Menu principal com input inválido
+    Sequencia: abc -> 1
+    [ERRO] ModuleNotFoundError: No module named 'messages'
+    Detalhes: Falhou na entrada 'abc': ModuleNotFoundError: No module named 'messages'
+
+[5] [FALHOU] - Agendar com input aleatório em semana
+    Sequencia: 1 -> xyz -> 1
+    [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+    Detalhes: Falhou na entrada '1': ModuleNotFoundError: No module named 'agenda_service'
+
+[6] [FALHOU] - Agendar -> Semana -> input inválido dia
+    Sequencia: 1 -> 1 -> 999
+               ... (4 inputs no total)
+    [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+    Detalhes: Falhou na entrada '1': ModuleNotFoundError: No module named 'agenda_service'
+
+[7] [FALHOU] - Input vazio no menu
+    Sequencia:  -> 1
+    [ERRO] ModuleNotFoundError: No module named 'messages'
+    Detalhes: Falhou na entrada '': ModuleNotFoundError: No module named 'messages'
+
+[8] [FALHOU] - Saudação com espaços extras
+    Sequencia:   oi   -> 1
+    [ERRO] ModuleNotFoundError: No module named 'messages'
+    Detalhes: Falhou na entrada '  oi  ': ModuleNotFoundError: No module named 'messages'
+
+[9] [FALHOU] - Menu -> Agendar -> Voltar -> Menu -> Reagendar
+    Sequencia: 1 -> 9 -> 2
+    [ERRO] ModuleNotFoundError: No module named 'constants'
+    Detalhes: Falhou na entrada '9': ModuleNotFoundError: No module named 'constants'
+
+[10] [FALHOU] - Menu -> Cancelar -> Voltar -> Agendar
+    Sequencia: 3 -> 9 -> 1
+    [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+    Detalhes: Falhou na entrada '3': ModuleNotFoundError: No module named 'agenda_service'
+
+================================================================================
+TESTES QUE FALHARAM (ANÁLISE DETALHADA)
+================================================================================
+
+TESTE: Menu principal -> Agendar -> Voltar -> Menu
+Erro: ModuleNotFoundError: No module named 'constants'
+Sequencia de inputs e respostas:
+  1. [OK] Entrada: '1'
+     Estado anterior: menu_principal
+     Estado atual: agendar
+     Resposta: Escolha a semana:
+1️⃣ Esta semana
+2️⃣ Próxima semana
+⬅️ Voltar...
+  2. [ERRO] Entrada: '9'
+     Estado anterior: agendar
+     Estado atual: menu_principal
+     [ERRO] ModuleNotFoundError: No module named 'constants'
+
+TESTE: Menu principal -> Agendar -> Semana -> Dia -> Horário -> Confirmar
+Erro: ModuleNotFoundError: No module named 'agenda_service'
+Sequencia de inputs e respostas:
+  1. [OK] Entrada: '1'
+     Estado anterior: menu_principal
+     Estado atual: agendar
+     Resposta: Escolha a semana:
+1️⃣ Esta semana
+2️⃣ Próxima semana
+⬅️ Voltar...
+  2. [ERRO] Entrada: '1'
+     Estado anterior: agendar
+     Estado atual: escolher_dia
+     [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+
+TESTE: Menu -> Cancelar (sem agendamentos)
+Erro: ModuleNotFoundError: No module named 'agenda_service'
+Sequencia de inputs e respostas:
+  1. [ERRO] Entrada: '3'
+     Estado anterior: menu_principal
+     Estado atual: cancelar
+     [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+
+TESTE: Menu principal com input inválido
+Erro: ModuleNotFoundError: No module named 'messages'
+Sequencia de inputs e respostas:
+  1. [ERRO] Entrada: 'abc'
+     Estado anterior: menu_principal
+     Estado atual: menu_principal
+     [ERRO] ModuleNotFoundError: No module named 'messages'
+
+TESTE: Agendar com input aleatório em semana
+Erro: ModuleNotFoundError: No module named 'agenda_service'
+Sequencia de inputs e respostas:
+  1. [OK] Entrada: '1'
+     Estado anterior: menu_principal
+     Estado atual: agendar
+     Resposta: Escolha a semana:
+1️⃣ Esta semana
+2️⃣ Próxima semana
+⬅️ Voltar...
+  2. [OK] Entrada: 'xyz'
+     Estado anterior: agendar
+     Estado atual: agendar
+     Resposta: Opção inválida.. Escolha uma semana:
+Escolha a semana:
+1️⃣ Esta semana
+2️⃣ Próxi...
+  3. [ERRO] Entrada: '1'
+     Estado anterior: agendar
+     Estado atual: escolher_dia
+     [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+
+TESTE: Agendar -> Semana -> input inválido dia
+Erro: ModuleNotFoundError: No module named 'agenda_service'
+Sequencia de inputs e respostas:
+  1. [OK] Entrada: '1'
+     Estado anterior: menu_principal
+     Estado atual: agendar
+     Resposta: Escolha a semana:
+1️⃣ Esta semana
+2️⃣ Próxima semana
+⬅️ Voltar...
+  2. [ERRO] Entrada: '1'
+     Estado anterior: agendar
+     Estado atual: escolher_dia
+     [ERRO] ModuleNotFoundError: No module named 'agenda_service'
+
+TESTE: Input vazio no menu
+Erro: ModuleNotFoundError: No module named 'messages'
+Sequencia de inputs e respostas:
+  1. [ERRO] Entrada: ''
+     Estado anterior: menu_principal
+     Estado atual: menu_principal
+     [ERRO] ModuleNotFoundError: No module named 'messages'
+
+TESTE: Saudação com espaços extras
+Erro: ModuleNotFoundError: No module named 'messages'
+Sequencia de inputs e respostas:
+  1. [ERRO] Entrada: '  oi  '
+     Estado anterior: menu_principal
+     Estado atual: menu_principal
+     [ERRO] ModuleNotFoundError: No module named 'messages'
+
+TESTE: Menu -> Agendar -> Voltar -> Menu -> Reagendar
+Erro: ModuleNotFoundError: No module named 'constants'
+Sequencia de inputs e respostas:
+  1. [OK] Entrada: '1'
+     Estado anterior: menu_principal
+     Estado atual: agendar
+     Resposta: Escolha a semana:
+1️⃣ Esta semana
+2️⃣ Próxima semana
+⬅️ Voltar...
+  2. [ERRO] Entrada: '9'
+     Estado anterior: agendar
+     Estado atual: menu_principal
+     [ERRO] ModuleNotFoundError: No module named 'constants'
+
+TESTE: Menu -> Cancelar -> Voltar -> Agendar
+Erro: ModuleNotFoundError: No module named 'agenda_service'
+Sequencia de inputs e respostas:
+  1. [ERRO] Entrada: '3'
+     Estado anterior: menu_principal
+     Estado atual: cancelar
+     [ERRO] ModuleNotFoundError: No module named 'agenda_service'

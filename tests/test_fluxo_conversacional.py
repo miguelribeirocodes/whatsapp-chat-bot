@@ -6,14 +6,16 @@ Testa todos os caminhos possíveis (happy path, inputs inválidos, edge cases)
 SEM enviar mensagens reais para WhatsApp.
 
 Uso:
-    python test_fluxo_conversacional.py
+    python tests/test_fluxo_conversacional.py
+    ou de root: python -m tests.test_fluxo_conversacional
 
 Saída:
-    - relatorio_testes_<timestamp>.json (dados estruturados)
-    - relatorio_testes_<timestamp>.txt (relatório legível)
+    - tests/relatorio_testes_<timestamp>.json (dados estruturados)
+    - tests/relatorio_testes_<timestamp>.txt (relatório legível)
 """
 
 import sys
+import os
 import json
 import logging
 from datetime import datetime
@@ -21,6 +23,11 @@ from typing import List, Dict, Tuple, Any
 import traceback
 import random
 import string
+
+# Adicionar diretório pai ao path para importar src
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # Desabilitar logs do WhatsApp e outras bibliotecas durante testes
 logging.basicConfig(level=logging.CRITICAL)
