@@ -1,7 +1,10 @@
 from datetime import datetime, timedelta, time, date  # importa tipos de data e hora da biblioteca padrão
 import gspread                                         # importa gspread para integração com Google Sheets
 from google.oauth2.service_account import Credentials  # importa credenciais do service account do Google
+import logging                                         # importa logging para registros de eventos
 import re
+
+logger = logging.getLogger(__name__)                   # obtém logger do módulo
 
 # -------------------------------------------------------
 # Configuração da agenda em Google Sheets
@@ -240,10 +243,10 @@ def buscar_perfil_por_telefone(telefone: str):
         tel_reg = str(reg.get("telefone", "")).strip()  # obtém o telefone da linha atual
         if tel_reg == telefone_str:                     # compara com o telefone procurado
             nome_reg = reg.get("nome", "").strip() or "Paciente sem nome"  # pega o nome ou usa padrão
-            print(f"(DEBUG) Perfil encontrado para telefone {telefone_str}: {nome_reg}")  # loga o resultado
+            logger.debug(f"Perfil encontrado para telefone {telefone_str}: {nome_reg}")  # loga o resultado
             return {"telefone": telefone_str, "nome": nome_reg}  # retorna dicionário de perfil
 
-    print(f"(DEBUG) Nenhum cadastro encontrado para telefone {telefone_str}.")  # loga ausência de cadastro
+    logger.debug(f"Nenhum cadastro encontrado para telefone {telefone_str}.")  # loga ausência de cadastro
     return None                                          # indica que não achou nenhum registro
 
 
@@ -272,8 +275,8 @@ def criar_cadastro_paciente(telefone: str, nome: str, origem: str = "whatsapp_cl
         value_input_option="USER_ENTERED"               # deixa o Sheets interpretar os valores
     )
 
-    print(                                              # loga a criação do novo cadastro
-        f"(DEBUG) Novo cadastro criado: telefone={telefone_str}, nome={nome_final}, origem={origem}"
+    logger.debug(                                       # loga a criação do novo cadastro
+        f"Novo cadastro criado: telefone={telefone_str}, nome={nome_final}, origem={origem}"
     )
     return {"telefone": telefone_str, "nome": nome_final}  # retorna o dicionário de perfil criado
 
@@ -547,9 +550,9 @@ def inicializar_slots_proximos_dias(num_dias: int = NUM_DIAS_GERAR_SLOTS):
             intervalo,
             novas_linhas
         )
-        print(f"(DEBUG) Foram criados {len(novas_linhas)} novos slots na Agenda.")  # log de debug
+        logger.debug(f"Foram criados {len(novas_linhas)} novos slots na Agenda.")  # log de debug
     else:
-        print("(DEBUG) Nenhum novo slot precisou ser criado (todos já existiam).")  # log indicando ausência de novos slots
+        logger.debug("Nenhum novo slot precisou ser criado (todos já existiam).")  # log indicando ausência de novos slots
 
 
 def adicionar_slots_dia_futuro():

@@ -4,8 +4,9 @@ import requests  # importa requests para chamadas HTTP à Graph API
 from dotenv import load_dotenv  # importa load_dotenv para carregar .env
 import logging  # importa logging para logs
 import json  # importa json para serializar payloads de debug
+from logging_config import setup_logging  # importa configuração centralizada de logging
 
-logging.basicConfig(level=logging.INFO)  # configura logging básico em nível INFO
+setup_logging()  # configura logging com handlers de console e arquivo
 logger = logging.getLogger(__name__)  # obtém logger do módulo
 from agenda_service import buscar_perfil_por_telefone, criar_cadastro_paciente
 
@@ -51,12 +52,16 @@ def send_text(to: str, text: str):
         "text": {"body": text}
     }
     try:
-        logger.info("[send_text] Sending to %s payload=%s", to, json.dumps(payload, ensure_ascii=False))  # log do payload enviado
+        logger.info("[send_text] Sending to %s", to)  # log simples do destino
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)  # chama a Graph API
-        logger.info("[send_text] Response status=%s body=%s", r.status_code, r.text)  # log da resposta
+        if r.status_code != 200:
+            logger.error("[send_text] Error sending to %s - Status: %s | Payload: %s | Response: %s",
+                        to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)  # log detalhado em caso de erro
+        else:
+            logger.info("[send_text] Successfully sent to %s", to)  # log de sucesso
         return r  # retorna o response para o chamador
     except Exception as e:
-        logger.exception("[send_text] Exception while sending message")  # log de exceção se falhar
+        logger.exception("[send_text] Exception while sending message to %s", to)  # log de exceção com destino
         raise  # re-levanta exceção para tratamento externo
 
 
@@ -289,12 +294,16 @@ def send_menu_buttons(to: str, text: str, items: list = None):
         }
     }
     try:
-        logger.info("[send_menu_buttons] Sending to %s payload=%s", to, json.dumps(payload, ensure_ascii=False))  # log do envio
+        logger.info("[send_menu_buttons] Sending to %s", to)  # log simples do destino
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)  # envia para Graph API
-        logger.info("[send_menu_buttons] Response status=%s body=%s", r.status_code, r.text)  # log da resposta
+        if r.status_code != 200:
+            logger.error("[send_menu_buttons] Error sending to %s - Status: %s | Payload: %s | Response: %s",
+                        to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)  # log detalhado em caso de erro
+        else:
+            logger.info("[send_menu_buttons] Successfully sent to %s", to)  # log de sucesso
         return r  # retorna response
     except Exception:
-        logger.exception("[send_menu_buttons] Exception while sending buttons")  # log de erro
+        logger.exception("[send_menu_buttons] Exception while sending buttons to %s", to)  # log de erro com destino
         raise  # re-levanta
 
 
@@ -318,12 +327,16 @@ def send_weeks_buttons(to: str, text: str):
         }
     }
     try:
-        logger.info("[send_weeks_buttons] Sending to %s payload=%s", to, json.dumps(payload, ensure_ascii=False))  # log
+        logger.info("[send_weeks_buttons] Sending to %s", to)  # log simples do destino
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)  # envia
-        logger.info("[send_weeks_buttons] Response status=%s body=%s", r.status_code, r.text)  # log resposta
+        if r.status_code != 200:
+            logger.error("[send_weeks_buttons] Error sending to %s - Status: %s | Payload: %s | Response: %s",
+                        to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)  # log detalhado em caso de erro
+        else:
+            logger.info("[send_weeks_buttons] Successfully sent to %s", to)  # log de sucesso
         return r
     except Exception:
-        logger.exception("[send_weeks_buttons] Exception while sending week buttons")  # log exceção
+        logger.exception("[send_weeks_buttons] Exception while sending week buttons to %s", to)  # log de erro com destino
         raise
 
 
@@ -349,10 +362,14 @@ def send_list_days(to: str, title: str, items: list):
     try:
         logger.info("[send_list_days] Sending to %s payload header=%s rows=%d", to, title, sum(len(s.get('rows',[])) for s in payload['interactive']['action']['sections']))  # log com número de rows
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)  # envia para Graph API
-        logger.info("[send_list_days] Response status=%s body=%s", r.status_code, r.text)  # log resposta
+        if r.status_code != 200:
+            logger.error("[send_list_days] Error sending to %s - Status: %s | Payload: %s | Response: %s",
+                        to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)  # log detalhado em caso de erro
+        else:
+            logger.info("[send_list_days] Successfully sent to %s", to)  # log de sucesso
         return r  # retorna response
     except Exception:
-        logger.exception("[send_list_days] Exception while sending list of days")  # log exceção
+        logger.exception("[send_list_days] Exception while sending list of days to %s", to)  # log de erro com destino
         raise  # re-levanta
 
 
@@ -379,12 +396,16 @@ def send_confirm_buttons(to: str, text: str):
         }
     }
     try:
-        logger.info("[send_confirm_buttons] Sending to %s payload=%s", to, json.dumps(payload, ensure_ascii=False))  # log
+        logger.info("[send_confirm_buttons] Sending to %s", to)  # log simples do destino
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)  # envia
-        logger.info("[send_confirm_buttons] Response status=%s body=%s", r.status_code, r.text)  # log resposta
+        if r.status_code != 200:
+            logger.error("[send_confirm_buttons] Error sending to %s - Status: %s | Payload: %s | Response: %s",
+                        to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)  # log detalhado em caso de erro
+        else:
+            logger.info("[send_confirm_buttons] Successfully sent to %s", to)  # log de sucesso
         return r  # retorna response
     except Exception:
-        logger.exception("[send_confirm_buttons] Exception while sending confirm buttons")  # log exceção
+        logger.exception("[send_confirm_buttons] Exception while sending confirm buttons to %s", to)  # log de erro com destino
         raise  # re-levanta
 
 
@@ -409,12 +430,16 @@ def send_reminder_confirm_buttons(to: str, text: str, appointment_iso: str):
         }
     }
     try:
-        logger.info("[send_reminder_confirm_buttons] Sending to %s payload=%s", to, json.dumps(payload, ensure_ascii=False))
+        logger.info("[send_reminder_confirm_buttons] Sending to %s", to)
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)
-        logger.info("[send_reminder_confirm_buttons] Response status=%s body=%s", r.status_code, r.text)
+        if r.status_code != 200:
+            logger.error("[send_reminder_confirm_buttons] Error sending to %s - Status: %s | Payload: %s | Response: %s",
+                        to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)
+        else:
+            logger.info("[send_reminder_confirm_buttons] Successfully sent to %s", to)
         return r
     except Exception:
-        logger.exception("[send_reminder_confirm_buttons] Exception while sending reminder confirm buttons")
+        logger.exception("[send_reminder_confirm_buttons] Exception while sending reminder confirm buttons to %s", to)
         raise
 
 
@@ -436,12 +461,16 @@ def send_back_cancel_buttons(to: str, text: str = 'Deseja voltar ou cancelar?'):
         }
     }
     try:
-        logger.info("[send_back_cancel_buttons] Sending to %s payload=%s", to, json.dumps(payload, ensure_ascii=False))  # log
+        logger.info("[send_back_cancel_buttons] Sending to %s", to)  # log simples do destino
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)  # envia
-        logger.info("[send_back_cancel_buttons] Response status=%s body=%s", r.status_code, r.text)  # log resposta
+        if r.status_code != 200:
+            logger.error("[send_back_cancel_buttons] Error sending to %s - Status: %s | Payload: %s | Response: %s",
+                        to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)  # log detalhado em caso de erro
+        else:
+            logger.info("[send_back_cancel_buttons] Successfully sent to %s", to)  # log de sucesso
         return r  # retorna response
     except Exception:
-        logger.exception("[send_back_cancel_buttons] Exception while sending back/cancel buttons")  # log exceção
+        logger.exception("[send_back_cancel_buttons] Exception while sending back/cancel buttons to %s", to)  # log de erro com destino
         raise  # re-levanta
 
 
@@ -463,12 +492,16 @@ def send_back_only_button(to: str, text: str = 'Voltar'):
         }
     }
     try:
-        logger.info("[send_back_only_button] Sending to %s payload=%s", to, json.dumps(payload, ensure_ascii=False))
+        logger.info("[send_back_only_button] Sending to %s", to)
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)
-        logger.info("[send_back_only_button] Response status=%s body=%s", r.status_code, r.text)
+        if r.status_code != 200:
+            logger.error("[send_back_only_button] Error sending to %s - Status: %s | Payload: %s | Response: %s",
+                        to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)
+        else:
+            logger.info("[send_back_only_button] Successfully sent to %s", to)
         return r
     except Exception:
-        logger.exception("[send_back_only_button] Exception while sending back-only button")
+        logger.exception("[send_back_only_button] Exception while sending back-only button to %s", to)
         raise
 
 
