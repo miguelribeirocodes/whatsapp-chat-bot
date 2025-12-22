@@ -28,8 +28,15 @@ GRAPH_API_BASE = f"https://graph.facebook.com/v17.0/{WHATSAPP_PHONE_ID}/messages
 import whatsapp_flow as wf  # importa lógica do fluxo conversacional (módulo local)
 import messages as MSG
 import scheduler
+import ngrok_service  # Auto-inicia ngrok se NGROK_ENABLED=true
 
 app = FastAPI()  # instancia FastAPI
+
+# Log URL do ngrok se habilitado
+if ngrok_service.is_enabled():
+    tunnel_url = ngrok_service.get_tunnel_url()
+    if tunnel_url:
+        logger.info('[startup] Ngrok tunnel: %s/webhook', tunnel_url)
 
 # -------------------------------------------------------
 # Inicialização de slots na startup
