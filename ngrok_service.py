@@ -71,14 +71,13 @@ def start():
         auth_token = os.getenv('NGROK_AUTH_TOKEN')
         if auth_token and auth_token.strip():
             ngrok.set_auth_token(auth_token)
-
-        # Região opcional (padrão: us)
-        region = os.getenv('NGROK_REGION', 'us')
+            logger.info("[ngrok] Auth token configured")
 
         logger.info("[ngrok] Starting tunnel on port 8000...")
 
-        # Criar túnel
-        _tunnel = ngrok.connect(8000, bind_tls=True, region=region)
+        # Criar túnel (sintaxe correta do pyngrok)
+        # O ngrok.connect() retorna um Ngrok object com public_url
+        _tunnel = ngrok.connect(8000, "http")
         _public_url = _tunnel.public_url
 
         # Log proeminente da URL para fácil localização nos logs
