@@ -26,7 +26,7 @@ import string
 logging.basicConfig(level=logging.CRITICAL)
 
 # Importar apenas a função de processar mensagem
-from whatsapp_flow import processar_mensagem, sessoes as flow_sessoes
+from src.whatsapp_flow import processar_mensagem, sessoes as flow_sessoes
 
 
 class TestadorFluxoConversacional:

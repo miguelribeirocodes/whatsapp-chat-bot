@@ -4,11 +4,11 @@ import requests  # importa requests para chamadas HTTP à Graph API
 from dotenv import load_dotenv  # importa load_dotenv para carregar .env
 import logging  # importa logging para logs
 import json  # importa json para serializar payloads de debug
-from logging_config import setup_logging  # importa configuração centralizada de logging
+from src.logging_config import setup_logging  # importa configuração centralizada de logging
 
 setup_logging()  # configura logging com handlers de console e arquivo
 logger = logging.getLogger(__name__)  # obtém logger do módulo
-from agenda_service import buscar_perfil_por_telefone, criar_cadastro_paciente
+from src.agenda_service import buscar_perfil_por_telefone, criar_cadastro_paciente
 
 
 # Helpers para nomes dos dias da semana em português (usados nos títulos/descrições)
@@ -25,10 +25,10 @@ WHATSAPP_PHONE_ID = os.environ.get("WHATSAPP_PHONE_ID")  # id do telefone/contai
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")  # token de verificação para webhook
 GRAPH_API_BASE = f"https://graph.facebook.com/v17.0/{WHATSAPP_PHONE_ID}/messages"  # endpoint da Graph API
 
-import whatsapp_flow as wf  # importa lógica do fluxo conversacional (módulo local)
-import messages as MSG
-import scheduler
-import ngrok_service  # Auto-inicia ngrok se NGROK_ENABLED=true
+from src import whatsapp_flow as wf  # importa lógica do fluxo conversacional (módulo local)
+from src import messages as MSG
+from src import scheduler
+from src import ngrok_service  # Auto-inicia ngrok se NGROK_ENABLED=true
 
 app = FastAPI()  # instancia FastAPI
 
@@ -42,7 +42,7 @@ if ngrok_service.is_enabled():
 # Inicialização de slots na startup
 # -------------------------------------------------------
 try:
-    from agenda_service import inicializar_slots_proximos_dias, NUM_DIAS_GERAR_SLOTS
+    from src.agenda_service import inicializar_slots_proximos_dias, NUM_DIAS_GERAR_SLOTS
     logger.info('[startup] Inicializando slots para os próximos %d dias...', NUM_DIAS_GERAR_SLOTS)
     inicializar_slots_proximos_dias()
     logger.info('[startup] Slots inicializados com sucesso!')

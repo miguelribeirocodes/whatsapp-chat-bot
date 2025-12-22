@@ -5,13 +5,13 @@ Menu guiado com opções: Agendar, Reagendar, Cancelar, Sair.
 Navegação por datas, horários e confirmação, mantendo integração com agenda_service.py.
 """
 
-from agenda_service import *
+from src.agenda_service import *
 import re
-import messages as MSG
+from src import messages as MSG
 import logging
 
 # Imports da refatoração: constantes e helpers
-from constants import (
+from src.constants import (
     States,
     SessionKeys,
     BUTTON_ID_AGENDAR,
@@ -25,7 +25,7 @@ from constants import (
     BUTTON_ID_PROXIMA_SEMANA,
     UniversalActions,
 )
-from flow_helpers import (
+from src.flow_helpers import (
     format_data_pt,
     format_appointment_list,
     get_future_appointments,

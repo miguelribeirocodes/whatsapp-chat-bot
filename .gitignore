@@ -1,8 +1,41 @@
-old/
+# Virtual environments
 .venv/
+venv/
+env/
+
+# Python
 __pycache__/
-service_account.json
-.env
-logs/
-.claude/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Credentials & Secrets
+service_account.json
+*.key
+*.pem
+
+# Logs
+logs/
+*.log
+
+# IDE metadata
+.claude/
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

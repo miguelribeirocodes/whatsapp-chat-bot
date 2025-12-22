@@ -5,7 +5,7 @@ Funções auxiliares para o fluxo do chatbot - elimina código duplicado.
 
 from datetime import datetime, date
 from typing import List, Tuple, Optional
-from constants import NOMES_DIAS_PT
+from src.constants import NOMES_DIAS_PT
 
 
 # ============================================================================
