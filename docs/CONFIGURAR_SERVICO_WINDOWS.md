@@ -67,7 +67,7 @@ Uma janela GUI será aberta. Configure **EXATAMENTE** desta forma:
 
 - **Startup directory:** `c:\Users\User\OneDrive - NORTETEL\Documentos\Miguel\Chat Bot Agendador`
 
-- **Arguments:** `whatsapp_webhook.py`
+- **Arguments:** `src/whatsapp_webhook.py`
 
 ### Aba Details
 
@@ -197,7 +197,7 @@ git pull origin main
 pip install -r requirements.txt --upgrade
 
 # 4. Testar manualmente antes de subir (RECOMENDADO)
-python whatsapp_webhook.py
+python -m uvicorn src.whatsapp_webhook:app --host 0.0.0.0 --port 8000
 # Aguarde ver "Uvicorn running on http://0.0.0.0:8000"
 # Pressione Ctrl+C para parar
 
@@ -339,6 +339,27 @@ if __name__ == "__main__":
     import uvicorn
     logger.info("[main] Starting Uvicorn server on 0.0.0.0:8000")
     uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+---
+
+### Problema 7: "ModuleNotFoundError" após reorganização do projeto
+
+**Causa:** Após mover os arquivos para a pasta `src/`, os argumentos do NSSM precisam ser atualizados
+
+**Solução:**
+```cmd
+# Parar o serviço
+nssm stop WhatsAppAgendadorBot
+
+# Atualizar os argumentos
+nssm set WhatsAppAgendadorBot AppParameters "src/whatsapp_webhook.py"
+
+# Reiniciar o serviço
+nssm start WhatsAppAgendadorBot
+
+# Verificar logs
+powershell -Command "Get-Content 'logs\service_error.log' -Tail 20"
 ```
 
 ---
