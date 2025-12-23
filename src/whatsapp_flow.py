@@ -408,7 +408,7 @@ def processar_mensagem(usuario_id, mensagem):
             old_appointment_dt = None
             if is_reagendamento:
                 old_appointment_dt = sessoes[reagendar_antigo_key]
-                from agenda_service import cancelar_agendamento_por_data_hora
+                from src.agenda_service import cancelar_agendamento_por_data_hora
                 cancelar_agendamento_por_data_hora(old_appointment_dt)
                 sessoes.pop(reagendar_antigo_key, None)
 
@@ -423,8 +423,8 @@ def processar_mensagem(usuario_id, mensagem):
 
             # Agendar lembretes
             try:
-                from agenda_service import registrar_lembrete_agendamento
-                from scheduler import schedule_at
+                from src.agenda_service import registrar_lembrete_agendamento
+                from src.scheduler import schedule_at
                 from datetime import timedelta, datetime
 
                 reminder_dt = horario - timedelta(hours=MSG.REMINDER_HOURS_BEFORE)
@@ -447,12 +447,12 @@ def processar_mensagem(usuario_id, mensagem):
                         )
                         action = MSG.REMINDER_ACTION_PROMPT if hasattr(MSG, 'REMINDER_ACTION_PROMPT') else ''
                         text = greeting + appt_text + ("\n" + action if action else "")
-                        __import__('whatsapp_webhook').send_reminder_confirm_buttons(phone, text, dt.isoformat())
+                        __import__('src.whatsapp_webhook').send_reminder_confirm_buttons(phone, text, dt.isoformat())
                     except Exception:
                         logger.exception('failed sending reminder')
                     try:
                         if row:
-                            __import__('agenda_service').remover_lembrete_por_row(row)
+                            __import__('src.agenda_service').remover_lembrete_por_row(row)
                     except Exception:
                         pass
 
@@ -463,7 +463,7 @@ def processar_mensagem(usuario_id, mensagem):
 
                 # Notificar dono da clínica
                 try:
-                    webhook = __import__('whatsapp_webhook')
+                    webhook = __import__('src.whatsapp_webhook')
                     if is_reagendamento and old_appointment_dt:
                         # Reagendamento: envia mensagem única com dados antigos e novos
                         webhook.send_reminder_to_owner(
@@ -544,7 +544,7 @@ def processar_mensagem(usuario_id, mensagem):
             except Exception:
                 nome_para_notif = None
 
-            from agenda_service import cancelar_agendamento_por_data_hora
+            from src.agenda_service import cancelar_agendamento_por_data_hora
             sucesso = False
             if dt:
                 sucesso = cancelar_agendamento_por_data_hora(dt)
@@ -561,7 +561,7 @@ def processar_mensagem(usuario_id, mensagem):
                     time=dt.strftime('%H:%M')
                 )
                 try:
-                    __import__('whatsapp_webhook').send_reminder_to_owner(
+                    __import__('src.whatsapp_webhook').send_reminder_to_owner(
                         nome_para_notif or "",
                         dt.strftime('%d/%m/%Y') if dt else '',
                         dt.strftime('%H:%M') if dt else '',
@@ -599,7 +599,7 @@ def exibir_semanas_disponiveis(usuario_id):
 
 # Função para obter dias disponíveis na semana
 def obter_dias_disponiveis_semana(semana_offset=0):
-    from agenda_service import obter_intervalo_semana_relativa, obter_slots_disponiveis_no_intervalo
+    from src.agenda_service import obter_intervalo_semana_relativa, obter_slots_disponiveis_no_intervalo
     inicio, fim = obter_intervalo_semana_relativa(semana_offset)
     slots = obter_slots_disponiveis_no_intervalo(inicio, fim)
     dias_unicos = sorted(set([slot.date() for slot in slots]))
@@ -618,7 +618,7 @@ def exibir_dias_disponiveis(usuario_id, semana_offset=0):
 
 # Função para obter horários disponíveis para um dia
 def obter_horarios_disponiveis_para_dia(data_dia):
-    from agenda_service import obter_slots_disponiveis_para_data
+    from src.agenda_service import obter_slots_disponiveis_para_data
     return obter_slots_disponiveis_para_data(data_dia)
 
 # Função para exibir horários disponíveis

@@ -83,7 +83,7 @@ def format_appointment_list(
         #  2️⃣ Terça, 24/12/2025 14:00 - João
         #  ⬅️ Voltar"
     """
-    import messages as MSG
+    from src import messages as MSG
 
     texto = f"Escolha o agendamento para {action_verb}:\n"
 
@@ -110,7 +110,7 @@ def format_days_list(dias: List[date]) -> str:
     Returns:
         Texto formatado para envio ao usuário
     """
-    import messages as MSG
+    from src import messages as MSG
 
     if not dias:
         return f"{MSG.NO_DAYS_AVAILABLE}\n⬅️ {MSG.LABEL_VOLTA}"
@@ -133,7 +133,7 @@ def format_hours_list(horarios: List[datetime]) -> str:
     Returns:
         Texto formatado para envio ao usuário
     """
-    import messages as MSG
+    from src import messages as MSG
 
     if not horarios:
         return f"{MSG.NO_HOURS_AVAILABLE}\n⬅️ {MSG.LABEL_VOLTA}"
@@ -183,7 +183,7 @@ def cleanup_session_keys(sessoes: dict, usuario_id: str, keys_to_clean: List[str
             '_horario_escolhido'
         ])
     """
-    from constants import SessionKeys
+    from src.constants import SessionKeys
 
     for key_suffix in keys_to_clean:
         full_key = SessionKeys.get_user_key(usuario_id, key_suffix)
@@ -228,8 +228,8 @@ def get_future_appointments(usuario_id: str = None) -> List[Tuple[datetime, List
     Returns:
         Lista ordenada de tuplas (datetime, linha_sheet)
     """
-    from agenda_service import obter_todos_agenda_cached
-    from constants import SheetColumns
+    from src.agenda_service import obter_todos_agenda_cached
+    from src.constants import SheetColumns
 
     todos = obter_todos_agenda_cached()[1:]  # Ignora cabeçalho
     agora = datetime.now()
@@ -285,7 +285,7 @@ def create_confirmation_message(dt: datetime, action: str = 'agendamento') -> st
     Returns:
         Mensagem formatada
     """
-    import messages as MSG
+    from src import messages as MSG
 
     if action == 'agendamento':
         return MSG.CONFIRM_AGENDAMENTO_TEMPLATE.format(
@@ -312,8 +312,8 @@ def build_main_menu() -> Tuple[str, List[Tuple[str, str, str]]]:
     Returns:
         Tupla (texto, items) onde items = [(id, title, description), ...]
     """
-    import messages as MSG
-    from constants import BUTTON_ID_AGENDAR, BUTTON_ID_REAGENDAR, BUTTON_ID_CANCELAR, BUTTON_ID_VALORES
+    from src import messages as MSG
+    from src.constants import BUTTON_ID_AGENDAR, BUTTON_ID_REAGENDAR, BUTTON_ID_CANCELAR, BUTTON_ID_VALORES
 
     texto = f"{MSG.MENU_PROMPT}\n{MSG.LIST_BODY_TEXT}"
     items = [
