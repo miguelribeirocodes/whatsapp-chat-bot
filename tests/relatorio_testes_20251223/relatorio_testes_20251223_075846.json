@@ -1,0 +1,350 @@
+{
+  "resumo": {
+    "total": 10,
+    "passou": 6,
+    "falhou": 4,
+    "taxa_sucesso": 60.0
+  },
+  "testes": [
+    {
+      "nome": "Menu principal -> Agendar -> Voltar -> Menu (validado)",
+      "timestamp": "2025-12-23T07:58:25.622278",
+      "sequencia": [
+        "1",
+        "9"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "9",
+          "resposta": "Operação cancelada.\nSou a secretária virtual da Clínica X.\nSelecione uma opção",
+          "estado_anterior": "agendar",
+          "estado_atual": "menu_principal",
+          "sucesso": true,
+          "erro": null
+        }
+      ],
+      "passou": false,
+      "erro": null,
+      "detalhes": "Validação customizada falhou"
+    },
+    {
+      "nome": "Menu principal -> Agendar -> Semana -> Dia -> Horário -> Confirmar (validado)",
+      "timestamp": "2025-12-23T07:58:25.622278",
+      "sequencia": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Escolha o dia:\n1️⃣ Terça-feira, 23/12/2025\n2️⃣ Quarta-feira, 24/12/2025\n3️⃣ Quinta-feira, 25/12/2025\n4️⃣ Sexta-feira, 26/12/2025\n⬅️ Voltar",
+          "estado_anterior": "agendar",
+          "estado_atual": "escolher_dia",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Escolha o horário:\n1️⃣ 15:00\n2️⃣ 16:00\n⬅️ Voltar",
+          "estado_anterior": "escolher_dia",
+          "estado_atual": "escolher_horario",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Confirma o agendamento para Terça-feira, 23/12/2025 às 15:00?",
+          "estado_anterior": "escolher_horario",
+          "estado_atual": "confirmar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "✅ Agendamento *confirmado* com sucesso!\n\n📅 Data: Terça-feira, 23/12/2025\n🕐 Horário: 15:00\n\nVocê receberá um lembrete 24 horas antes da consulta.\nAté lá!\nSou a secretária virtual da Clínica X.\nSelecione uma opção",
+          "estado_anterior": "confirmar",
+          "estado_atual": "menu_principal",
+          "sucesso": true,
+          "erro": null
+        }
+      ],
+      "passou": true,
+      "erro": null,
+      "detalhes": ""
+    },
+    {
+      "nome": "Menu -> Cancelar (sem agendamentos)",
+      "timestamp": "2025-12-23T07:58:40.515238",
+      "sequencia": [
+        "3"
+      ],
+      "respostas": [
+        {
+          "input": "3",
+          "resposta": null,
+          "estado_anterior": "menu_principal",
+          "estado_atual": "cancelar",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'messages'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 159, in processar_mensagem\n    return processar_mensagem(usuario_id, '')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 272, in processar_mensagem\n    return format_appointment_list(agendamentos, 'cancelar')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 86, in format_appointment_list\n    import messages as MSG\nModuleNotFoundError: No module named 'messages'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'messages'",
+      "detalhes": "Falhou na entrada '3': ModuleNotFoundError: No module named 'messages'"
+    },
+    {
+      "nome": "Menu principal com input inválido (validado)",
+      "timestamp": "2025-12-23T07:58:40.788733",
+      "sequencia": [
+        "abc",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "abc",
+          "resposta": "Opção inválida. Escolha uma das opções abaixo:\nSou a secretária virtual da Clínica X.\nSelecione uma opção",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "menu_principal",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        }
+      ],
+      "passou": true,
+      "erro": null,
+      "detalhes": ""
+    },
+    {
+      "nome": "Agendar com input aleatório em semana",
+      "timestamp": "2025-12-23T07:58:40.788733",
+      "sequencia": [
+        "1",
+        "xyz",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "xyz",
+          "resposta": "Opção inválida.. Escolha uma semana:\nEscolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "agendar",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Escolha o dia:\n1️⃣ Terça-feira, 23/12/2025\n2️⃣ Quarta-feira, 24/12/2025\n3️⃣ Quinta-feira, 25/12/2025\n4️⃣ Sexta-feira, 26/12/2025\n⬅️ Voltar",
+          "estado_anterior": "agendar",
+          "estado_atual": "escolher_dia",
+          "sucesso": true,
+          "erro": null
+        }
+      ],
+      "passou": true,
+      "erro": null,
+      "detalhes": "Sequência executada sem erros"
+    },
+    {
+      "nome": "Agendar -> Semana -> input inválido dia",
+      "timestamp": "2025-12-23T07:58:41.887078",
+      "sequencia": [
+        "1",
+        "1",
+        "999",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Escolha o dia:\n1️⃣ Terça-feira, 23/12/2025\n2️⃣ Quarta-feira, 24/12/2025\n3️⃣ Quinta-feira, 25/12/2025\n4️⃣ Sexta-feira, 26/12/2025\n⬅️ Voltar",
+          "estado_anterior": "agendar",
+          "estado_atual": "escolher_dia",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "999",
+          "resposta": "Opção inválida.. Escolha um dia:\nEscolha o dia:\n1️⃣ Terça-feira, 23/12/2025\n2️⃣ Quarta-feira, 24/12/2025\n3️⃣ Quinta-feira, 25/12/2025\n4️⃣ Sexta-feira, 26/12/2025\n⬅️ Voltar",
+          "estado_anterior": "escolher_dia",
+          "estado_atual": "escolher_dia",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Escolha o horário:\n1️⃣ 16:00\n⬅️ Voltar",
+          "estado_anterior": "escolher_dia",
+          "estado_atual": "escolher_horario",
+          "sucesso": true,
+          "erro": null
+        }
+      ],
+      "passou": true,
+      "erro": null,
+      "detalhes": "Sequência executada sem erros"
+    },
+    {
+      "nome": "Input vazio no menu",
+      "timestamp": "2025-12-23T07:58:46.379002",
+      "sequencia": [
+        "",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "",
+          "resposta": "Opção inválida. Escolha uma das opções abaixo:\nSou a secretária virtual da Clínica X.\nSelecione uma opção",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "menu_principal",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        }
+      ],
+      "passou": true,
+      "erro": null,
+      "detalhes": "Sequência executada sem erros"
+    },
+    {
+      "nome": "Saudação com espaços extras (validado)",
+      "timestamp": "2025-12-23T07:58:46.379002",
+      "sequencia": [
+        "  oi  ",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "  oi  ",
+          "resposta": "Olá! Seja bem-vindo(a)!\nSou a secretária virtual da Clínica X.\nSelecione uma opção",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "menu_principal",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        }
+      ],
+      "passou": true,
+      "erro": null,
+      "detalhes": ""
+    },
+    {
+      "nome": "Menu -> Agendar -> Voltar -> Menu -> Reagendar (validado)",
+      "timestamp": "2025-12-23T07:58:46.379002",
+      "sequencia": [
+        "1",
+        "9",
+        "2"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "9",
+          "resposta": "Operação cancelada.\nSou a secretária virtual da Clínica X.\nSelecione uma opção",
+          "estado_anterior": "agendar",
+          "estado_atual": "menu_principal",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "2",
+          "resposta": null,
+          "estado_anterior": "menu_principal",
+          "estado_atual": "reagendar",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'messages'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 154, in processar_mensagem\n    return processar_mensagem(usuario_id, '')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 221, in processar_mensagem\n    return format_appointment_list(agendamentos, 'reagendar')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 86, in format_appointment_list\n    import messages as MSG\nModuleNotFoundError: No module named 'messages'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'messages'",
+      "detalhes": "Falhou na entrada '2': ModuleNotFoundError: No module named 'messages'"
+    },
+    {
+      "nome": "Menu -> Cancelar -> Voltar -> Agendar (validado)",
+      "timestamp": "2025-12-23T07:58:46.629443",
+      "sequencia": [
+        "3",
+        "9",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "3",
+          "resposta": null,
+          "estado_anterior": "menu_principal",
+          "estado_atual": "cancelar",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'messages'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 288, in processar_mensagem\n    idx = int(mensagem) - 1\n          ^^^^^^^^^^^^^\nValueError: invalid literal for int() with base 10: ''\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 159, in processar_mensagem\n    return processar_mensagem(usuario_id, '')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 310, in processar_mensagem\n    return f\"{MSG.INVALID_OPTION} {format_appointment_list(agendamentos, 'cancelar')}\"\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 86, in format_appointment_list\n    import messages as MSG\nModuleNotFoundError: No module named 'messages'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'messages'",
+      "detalhes": "Falhou na entrada '3': ModuleNotFoundError: No module named 'messages'"
+    }
+  ]
+}

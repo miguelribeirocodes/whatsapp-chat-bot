@@ -1,0 +1,285 @@
+{
+  "resumo": {
+    "total": 10,
+    "passou": 0,
+    "falhou": 10,
+    "taxa_sucesso": 0.0
+  },
+  "testes": [
+    {
+      "nome": "Menu principal -> Agendar -> Voltar -> Menu (validado)",
+      "timestamp": "2025-12-23T07:48:14.776746",
+      "sequencia": [
+        "1",
+        "9"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "9",
+          "resposta": null,
+          "estado_anterior": "agendar",
+          "estado_atual": "menu_principal",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'constants'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 180, in processar_mensagem\n    cleanup_agendamento_session(sessoes, usuario_id)\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 197, in cleanup_agendamento_session\n    cleanup_session_keys(sessoes, usuario_id, [\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 186, in cleanup_session_keys\n    from constants import SessionKeys\nModuleNotFoundError: No module named 'constants'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'constants'",
+      "detalhes": "Falhou na entrada '9': ModuleNotFoundError: No module named 'constants'"
+    },
+    {
+      "nome": "Menu principal -> Agendar -> Semana -> Dia -> Horário -> Confirmar (validado)",
+      "timestamp": "2025-12-23T07:48:14.810542",
+      "sequencia": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": null,
+          "estado_anterior": "agendar",
+          "estado_atual": "escolher_dia",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 187, in processar_mensagem\n    return exibir_dias_disponiveis(usuario_id, 0)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 610, in exibir_dias_disponiveis\n    dias = obter_dias_disponiveis_semana(semana_offset)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 602, in obter_dias_disponiveis_semana\n    from agenda_service import obter_intervalo_semana_relativa, obter_slots_disponiveis_no_intervalo\nModuleNotFoundError: No module named 'agenda_service'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+      "detalhes": "Falhou na entrada '1': ModuleNotFoundError: No module named 'agenda_service'"
+    },
+    {
+      "nome": "Menu -> Cancelar (sem agendamentos)",
+      "timestamp": "2025-12-23T07:48:14.810542",
+      "sequencia": [
+        "3"
+      ],
+      "respostas": [
+        {
+          "input": "3",
+          "resposta": null,
+          "estado_anterior": "menu_principal",
+          "estado_atual": "cancelar",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 159, in processar_mensagem\n    return processar_mensagem(usuario_id, '')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 263, in processar_mensagem\n    agendamentos = get_future_appointments()\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 231, in get_future_appointments\n    from agenda_service import obter_todos_agenda_cached\nModuleNotFoundError: No module named 'agenda_service'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+      "detalhes": "Falhou na entrada '3': ModuleNotFoundError: No module named 'agenda_service'"
+    },
+    {
+      "nome": "Menu principal com input inválido (validado)",
+      "timestamp": "2025-12-23T07:48:14.810542",
+      "sequencia": [
+        "abc",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "abc",
+          "resposta": null,
+          "estado_anterior": "menu_principal",
+          "estado_atual": "menu_principal",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'messages'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 168, in processar_mensagem\n    menu_text, _ = exibir_menu_principal()\n                   ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 86, in exibir_menu_principal\n    return build_main_menu()\n           ^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 315, in build_main_menu\n    import messages as MSG\nModuleNotFoundError: No module named 'messages'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'messages'",
+      "detalhes": "Falhou na entrada 'abc': ModuleNotFoundError: No module named 'messages'"
+    },
+    {
+      "nome": "Agendar com input aleatório em semana",
+      "timestamp": "2025-12-23T07:48:14.824746",
+      "sequencia": [
+        "1",
+        "xyz",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "xyz",
+          "resposta": "Opção inválida.. Escolha uma semana:\nEscolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "agendar",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": null,
+          "estado_anterior": "agendar",
+          "estado_atual": "escolher_dia",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 187, in processar_mensagem\n    return exibir_dias_disponiveis(usuario_id, 0)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 610, in exibir_dias_disponiveis\n    dias = obter_dias_disponiveis_semana(semana_offset)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 602, in obter_dias_disponiveis_semana\n    from agenda_service import obter_intervalo_semana_relativa, obter_slots_disponiveis_no_intervalo\nModuleNotFoundError: No module named 'agenda_service'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+      "detalhes": "Falhou na entrada '1': ModuleNotFoundError: No module named 'agenda_service'"
+    },
+    {
+      "nome": "Agendar -> Semana -> input inválido dia",
+      "timestamp": "2025-12-23T07:48:14.827749",
+      "sequencia": [
+        "1",
+        "1",
+        "999",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "1",
+          "resposta": null,
+          "estado_anterior": "agendar",
+          "estado_atual": "escolher_dia",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 187, in processar_mensagem\n    return exibir_dias_disponiveis(usuario_id, 0)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 610, in exibir_dias_disponiveis\n    dias = obter_dias_disponiveis_semana(semana_offset)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 602, in obter_dias_disponiveis_semana\n    from agenda_service import obter_intervalo_semana_relativa, obter_slots_disponiveis_no_intervalo\nModuleNotFoundError: No module named 'agenda_service'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+      "detalhes": "Falhou na entrada '1': ModuleNotFoundError: No module named 'agenda_service'"
+    },
+    {
+      "nome": "Input vazio no menu",
+      "timestamp": "2025-12-23T07:48:14.830256",
+      "sequencia": [
+        "",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "",
+          "resposta": null,
+          "estado_anterior": "menu_principal",
+          "estado_atual": "menu_principal",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'messages'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 168, in processar_mensagem\n    menu_text, _ = exibir_menu_principal()\n                   ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 86, in exibir_menu_principal\n    return build_main_menu()\n           ^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 315, in build_main_menu\n    import messages as MSG\nModuleNotFoundError: No module named 'messages'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'messages'",
+      "detalhes": "Falhou na entrada '': ModuleNotFoundError: No module named 'messages'"
+    },
+    {
+      "nome": "Saudação com espaços extras (validado)",
+      "timestamp": "2025-12-23T07:48:14.832254",
+      "sequencia": [
+        "  oi  ",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "  oi  ",
+          "resposta": null,
+          "estado_anterior": "menu_principal",
+          "estado_atual": "menu_principal",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'messages'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 122, in processar_mensagem\n    menu_text, _ = exibir_menu_principal()\n                   ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 86, in exibir_menu_principal\n    return build_main_menu()\n           ^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 315, in build_main_menu\n    import messages as MSG\nModuleNotFoundError: No module named 'messages'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'messages'",
+      "detalhes": "Falhou na entrada '  oi  ': ModuleNotFoundError: No module named 'messages'"
+    },
+    {
+      "nome": "Menu -> Agendar -> Voltar -> Menu -> Reagendar (validado)",
+      "timestamp": "2025-12-23T07:48:14.834254",
+      "sequencia": [
+        "1",
+        "9",
+        "2"
+      ],
+      "respostas": [
+        {
+          "input": "1",
+          "resposta": "Escolha a semana:\n1️⃣ Esta semana\n2️⃣ Próxima semana\n⬅️ Voltar",
+          "estado_anterior": "menu_principal",
+          "estado_atual": "agendar",
+          "sucesso": true,
+          "erro": null
+        },
+        {
+          "input": "9",
+          "resposta": null,
+          "estado_anterior": "agendar",
+          "estado_atual": "menu_principal",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'constants'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 180, in processar_mensagem\n    cleanup_agendamento_session(sessoes, usuario_id)\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 197, in cleanup_agendamento_session\n    cleanup_session_keys(sessoes, usuario_id, [\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 186, in cleanup_session_keys\n    from constants import SessionKeys\nModuleNotFoundError: No module named 'constants'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'constants'",
+      "detalhes": "Falhou na entrada '9': ModuleNotFoundError: No module named 'constants'"
+    },
+    {
+      "nome": "Menu -> Cancelar -> Voltar -> Agendar (validado)",
+      "timestamp": "2025-12-23T07:48:14.836392",
+      "sequencia": [
+        "3",
+        "9",
+        "1"
+      ],
+      "respostas": [
+        {
+          "input": "3",
+          "resposta": null,
+          "estado_anterior": "menu_principal",
+          "estado_atual": "cancelar",
+          "sucesso": false,
+          "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\tests\\test_fluxo_conversacional.py\", line 91, in simular_mensagem\n    resposta = processar_mensagem(self.usuario_id, texto_mensagem)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 159, in processar_mensagem\n    return processar_mensagem(usuario_id, '')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\whatsapp_flow.py\", line 263, in processar_mensagem\n    agendamentos = get_future_appointments()\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\User\\OneDrive - NORTETEL\\Documentos\\Miguel\\Chat Bot Agendador\\src\\flow_helpers.py\", line 231, in get_future_appointments\n    from agenda_service import obter_todos_agenda_cached\nModuleNotFoundError: No module named 'agenda_service'\n"
+        }
+      ],
+      "passou": false,
+      "erro": "ModuleNotFoundError: No module named 'agenda_service'",
+      "detalhes": "Falhou na entrada '3': ModuleNotFoundError: No module named 'agenda_service'"
+    }
+  ]
+}

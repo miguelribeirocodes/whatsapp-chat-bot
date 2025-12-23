@@ -1,0 +1,119 @@
+================================================================================
+RELATÓRIO DE TESTES DO FLUXO CONVERSACIONAL
+================================================================================
+Data/Hora: 2025-12-23 07:58:46
+Total de testes: 10
+[PASSOU] 6
+[FALHOU] 4
+
+================================================================================
+RESUMO
+================================================================================
+Taxa de sucesso: 60.0%
+
+================================================================================
+DETALHES DOS TESTES
+================================================================================
+
+[1] [FALHOU] - Menu principal -> Agendar -> Voltar -> Menu (validado)
+    Sequencia: 1 -> 9
+    Detalhes: Validação customizada falhou
+
+[2] [PASSOU] - Menu principal -> Agendar -> Semana -> Dia -> Horário -> Confirmar (validado)
+    Sequencia: 1 -> 1 -> 1
+               ... (5 inputs no total)
+    Detalhes: 
+
+[3] [FALHOU] - Menu -> Cancelar (sem agendamentos)
+    Sequencia: 3
+    [ERRO] ModuleNotFoundError: No module named 'messages'
+    Detalhes: Falhou na entrada '3': ModuleNotFoundError: No module named 'messages'
+
+[4] [PASSOU] - Menu principal com input inválido (validado)
+    Sequencia: abc -> 1
+    Detalhes: 
+
+[5] [PASSOU] - Agendar com input aleatório em semana
+    Sequencia: 1 -> xyz -> 1
+    Detalhes: Sequência executada sem erros
+
+[6] [PASSOU] - Agendar -> Semana -> input inválido dia
+    Sequencia: 1 -> 1 -> 999
+               ... (4 inputs no total)
+    Detalhes: Sequência executada sem erros
+
+[7] [PASSOU] - Input vazio no menu
+    Sequencia:  -> 1
+    Detalhes: Sequência executada sem erros
+
+[8] [PASSOU] - Saudação com espaços extras (validado)
+    Sequencia:   oi   -> 1
+    Detalhes: 
+
+[9] [FALHOU] - Menu -> Agendar -> Voltar -> Menu -> Reagendar (validado)
+    Sequencia: 1 -> 9 -> 2
+    [ERRO] ModuleNotFoundError: No module named 'messages'
+    Detalhes: Falhou na entrada '2': ModuleNotFoundError: No module named 'messages'
+
+[10] [FALHOU] - Menu -> Cancelar -> Voltar -> Agendar (validado)
+    Sequencia: 3 -> 9 -> 1
+    [ERRO] ModuleNotFoundError: No module named 'messages'
+    Detalhes: Falhou na entrada '3': ModuleNotFoundError: No module named 'messages'
+
+================================================================================
+TESTES QUE FALHARAM (ANÁLISE DETALHADA)
+================================================================================
+
+TESTE: Menu principal -> Agendar -> Voltar -> Menu (validado)
+Erro: None
+Sequencia de inputs e respostas:
+  1. [OK] Entrada: '1'
+     Estado anterior: menu_principal
+     Estado atual: agendar
+     Resposta: Escolha a semana:
+1️⃣ Esta semana
+2️⃣ Próxima semana
+⬅️ Voltar...
+  2. [OK] Entrada: '9'
+     Estado anterior: agendar
+     Estado atual: menu_principal
+     Resposta: Operação cancelada.
+Sou a secretária virtual da Clínica X.
+Selecione uma opção...
+
+TESTE: Menu -> Cancelar (sem agendamentos)
+Erro: ModuleNotFoundError: No module named 'messages'
+Sequencia de inputs e respostas:
+  1. [ERRO] Entrada: '3'
+     Estado anterior: menu_principal
+     Estado atual: cancelar
+     [ERRO] ModuleNotFoundError: No module named 'messages'
+
+TESTE: Menu -> Agendar -> Voltar -> Menu -> Reagendar (validado)
+Erro: ModuleNotFoundError: No module named 'messages'
+Sequencia de inputs e respostas:
+  1. [OK] Entrada: '1'
+     Estado anterior: menu_principal
+     Estado atual: agendar
+     Resposta: Escolha a semana:
+1️⃣ Esta semana
+2️⃣ Próxima semana
+⬅️ Voltar...
+  2. [OK] Entrada: '9'
+     Estado anterior: agendar
+     Estado atual: menu_principal
+     Resposta: Operação cancelada.
+Sou a secretária virtual da Clínica X.
+Selecione uma opção...
+  3. [ERRO] Entrada: '2'
+     Estado anterior: menu_principal
+     Estado atual: reagendar
+     [ERRO] ModuleNotFoundError: No module named 'messages'
+
+TESTE: Menu -> Cancelar -> Voltar -> Agendar (validado)
+Erro: ModuleNotFoundError: No module named 'messages'
+Sequencia de inputs e respostas:
+  1. [ERRO] Entrada: '3'
+     Estado anterior: menu_principal
+     Estado atual: cancelar
+     [ERRO] ModuleNotFoundError: No module named 'messages'
