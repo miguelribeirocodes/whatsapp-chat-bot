@@ -138,7 +138,7 @@ try:
 
     def _owner_daily_summary():
         try:
-            from agenda_service import obter_todos_agenda_cached
+            from src.agenda_service import obter_todos_agenda_cached
             from datetime import datetime
             todos = obter_todos_agenda_cached()[1:]
             hoje_dt = datetime.now()
@@ -200,7 +200,7 @@ try:
         Mantém janela deslizante de slots disponíveis.
         """
         try:
-            from agenda_service import adicionar_slots_dia_futuro
+            from src.agenda_service import adicionar_slots_dia_futuro
             from datetime import datetime
             hoje = datetime.now().strftime('%d/%m/%Y')
 
@@ -514,7 +514,7 @@ def send_back_only_button(to: str, text: str = 'Voltar'):
 
 # On startup, load pending reminders from sheet and schedule/send them
 try:
-    from agenda_service import obter_lembretes_pendentes
+    from src.agenda_service import obter_lembretes_pendentes
     from datetime import datetime
     pendentes = obter_lembretes_pendentes()  # all pending
     for lemb in pendentes:
@@ -541,7 +541,7 @@ try:
                     logger.exception('[startup] failed to send pending reminder row=%s', row)
                     try:
                         # remove the reminder row after sending
-                        remover = __import__('agenda_service').remover_lembrete_por_row
+                        remover = __import__('src.agenda_service').remover_lembrete_por_row
                         removed = remover(row)
                         if not removed:
                             logger.warning('[startup] failed to remove reminder row=%s (will not mark as sent)', row)
@@ -550,7 +550,7 @@ try:
         else:
             # schedule for future
             try:
-                from scheduler import schedule_at
+                from src.scheduler import schedule_at
                 def _send_and_mark_start(row=row, phone=telefone, date_text=lemb['appointment_date'], time_text=lemb['appointment_time'], appt_iso=lemb.get('appointment_iso')):
                     try:
                         # lookup perfil at runtime to personalize
@@ -567,7 +567,7 @@ try:
                     except Exception:
                         logger.exception('[startup] failed sending scheduled reminder row=%s', row)
                     try:
-                        remover = __import__('agenda_service').remover_lembrete_por_row
+                        remover = __import__('src.agenda_service').remover_lembrete_por_row
                         removed = remover(row)
                         if not removed:
                             logger.warning('[startup] failed to remove scheduled reminder row=%s (will not mark as sent)', row)
@@ -630,7 +630,7 @@ async def webhook(request: Request):
                             # handle reminder actions immediately
                             if action in ('rem_confirm', 'rem_cancel') and app_iso:
                                 try:
-                                    from agenda_service import cancelar_agendamento_por_data_hora, obter_lembretes_pendentes
+                                    from src.agenda_service import cancelar_agendamento_por_data_hora, obter_lembretes_pendentes
                                     from datetime import datetime
                                     if action == 'rem_confirm':
                                         # acknowledge confirmation (personalized)
@@ -645,7 +645,7 @@ async def webhook(request: Request):
                                             logger.exception('[rem_handler] failed sending confirmation message')
                                         # remove any matching lembretes for this appointment
                                         try:
-                                            remover = __import__('agenda_service').remover_lembretes_por_appointment
+                                            remover = __import__('src.agenda_service').remover_lembretes_por_appointment
                                             remover(app_iso, from_number)
                                         except Exception:
                                             logger.exception('[rem_handler] failed removing lembretes for appointment')
@@ -668,7 +668,7 @@ async def webhook(request: Request):
                                             send_text(from_number, 'Não foi possível cancelar. Tente novamente.')
                                         # remove matching lembretes
                                         try:
-                                            remover = __import__('agenda_service').remover_lembretes_por_appointment
+                                            remover = __import__('src.agenda_service').remover_lembretes_por_appointment
                                             remover(app_iso, from_number)
                                         except Exception:
                                             logger.exception('[rem_handler] failed removing lembretes for appointment')
