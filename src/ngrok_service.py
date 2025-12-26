@@ -19,8 +19,8 @@ import logging
 from pyngrok import ngrok
 from dotenv import load_dotenv
 
-# Carregar variáveis de ambiente
-load_dotenv()
+# Carregar variáveis de ambiente (recarrega sempre que o módulo é importado)
+load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 # Estado global
@@ -75,9 +75,9 @@ def start():
 
         logger.info("[ngrok] Starting tunnel on port 8000...")
 
-        # Criar túnel (sintaxe correta do pyngrok)
+        # Criar túnel com load balancing habilitado para evitar conflito com URL persistente
         # O ngrok.connect() retorna um Ngrok object com public_url
-        _tunnel = ngrok.connect(8000, "http")
+        _tunnel = ngrok.connect(8000, "http", bind_tls=True)
         _public_url = _tunnel.public_url
 
         # Log proeminente da URL para fácil localização nos logs

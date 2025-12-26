@@ -249,3 +249,5 @@ Sem especificação no projeto.
 
 **Última atualização:** 2025-12-22
 Para mais detalhes, veja a documentação em `docs/`
+
+WhatsApp Test Number: +62 857-6328-3551
