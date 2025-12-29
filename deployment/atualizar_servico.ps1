@@ -57,7 +57,7 @@ Pop-Location
 # Etapa 4: Instalar novas dependencias
 Write-Host "[4/5] Atualizando dependencias Python..." -ForegroundColor $INFO
 $VENV_PATH = Join-Path $PROJECT_DIR ".venv"
-$PIP_EXE = Join-Path $VENV_PATH "Scripts" "pip.exe"
+$PIP_EXE = Join-Path (Join-Path $VENV_PATH "Scripts") "pip.exe"
 
 if (-not (Test-Path $PIP_EXE)) {
     Write-Host "ERRO: Ambiente virtual nao encontrado em $VENV_PATH" -ForegroundColor $ERROR_COLOR

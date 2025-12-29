@@ -6,8 +6,8 @@
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PROJECT_DIR = Split-Path -Parent $SCRIPT_DIR
 $VENV_PATH = Join-Path $PROJECT_DIR ".venv"
-$PYTHON_EXE = Join-Path $VENV_PATH "Scripts" "python.exe"
-$VENV_ACTIVATE = Join-Path $VENV_PATH "Scripts" "Activate.ps1"
+$PYTHON_EXE = Join-Path (Join-Path $VENV_PATH "Scripts") "python.exe"
+$VENV_ACTIVATE = Join-Path (Join-Path $VENV_PATH "Scripts") "Activate.ps1"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Iniciando Servidor WhatsApp Bot" -ForegroundColor Cyan

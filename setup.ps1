@@ -65,7 +65,7 @@ Write-Host "[4/4] Instalando dependencias..." -ForegroundColor $INFO
 Write-Host "Isso pode levar 2-5 minutos dependendo da conexao..." -ForegroundColor Gray
 
 # Ativar venv
-$VENV_ACTIVATE = Join-Path $VENV_PATH "Scripts" "Activate.ps1"
+$VENV_ACTIVATE = Join-Path (Join-Path $VENV_PATH "Scripts") "Activate.ps1"
 & $VENV_ACTIVATE
 
 # Atualizar pip primeiro
