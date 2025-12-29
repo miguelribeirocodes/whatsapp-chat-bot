@@ -96,7 +96,7 @@ Write-Host "   - WHATSAPP_PHONE_ID" -ForegroundColor Gray
 Write-Host "   - SPREADSHEET_ID (Google Sheets)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "2. Inicie o servidor com:" -ForegroundColor Gray
-Write-Host "   .\start_webhook.ps1" -ForegroundColor $WARN
+Write-Host "   .\dev\start_webhook.ps1" -ForegroundColor $WARN
 Write-Host ""
 Write-Host "3. Configure o webhook no Meta for Developers" -ForegroundColor Gray
 Write-Host ""

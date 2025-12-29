@@ -16,7 +16,7 @@ Write-Host ""
 
 # Verificar se venv existe
 if (-not (Test-Path $VENV_PATH)) {
-    Write-Host "❌ Erro: Ambiente virtual não encontrado!" -ForegroundColor Red
+    Write-Host "ERRO: Ambiente virtual nao encontrado!" -ForegroundColor Red
     Write-Host "Execute primeiro:" -ForegroundColor Yellow
     Write-Host "  python -m venv .venv" -ForegroundColor White
     Write-Host "  .\.venv\Scripts\Activate.ps1" -ForegroundColor White
@@ -25,29 +25,29 @@ if (-not (Test-Path $VENV_PATH)) {
 }
 
 # Parar processos antigos
-Write-Host "🔄 Parando processos antigos..." -ForegroundColor Yellow
+Write-Host "Parando processos antigos..." -ForegroundColor Yellow
 Stop-Process -Name ngrok -Force -ErrorAction SilentlyContinue | Out-Null
 Stop-Process -Name uvicorn -Force -ErrorAction SilentlyContinue | Out-Null
 Stop-Process -Name python -Force -ErrorAction SilentlyContinue | Out-Null
 Start-Sleep -Seconds 2
 
 # Ativar venv
-Write-Host "✓ Ativando ambiente virtual" -ForegroundColor Green
+Write-Host "Ativando ambiente virtual" -ForegroundColor Green
 & $VENV_ACTIVATE
 if (-not $?) {
-    Write-Host "❌ Erro ao ativar venv" -ForegroundColor Red
+    Write-Host "ERRO: Erro ao ativar venv" -ForegroundColor Red
     exit 1
 }
 
 # Iniciar uvicorn
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "🚀 Servidor iniciando..." -ForegroundColor Green
-Write-Host "⏳ Aguarde 5-10 segundos para o ngrok conectar" -ForegroundColor Yellow
+Write-Host "Servidor iniciando..." -ForegroundColor Green
+Write-Host "Aguarde 5-10 segundos para o ngrok conectar" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 & $PYTHON_EXE -m uvicorn src.whatsapp_webhook:app --reload --port 8000
 
-# Note: Este script continuará rodando enquanto uvicorn estiver ativo
+# Note: Este script continuara rodando enquanto uvicorn estiver ativo
 # Para parar: CTRL+C
