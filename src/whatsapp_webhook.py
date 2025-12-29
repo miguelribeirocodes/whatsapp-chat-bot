@@ -8,7 +8,13 @@ from src.logging_config import setup_logging  # importa configuração centraliz
 
 setup_logging()  # configura logging com handlers de console e arquivo
 logger = logging.getLogger(__name__)  # obtém logger do módulo
-from src.agenda_service import buscar_perfil_por_telefone, criar_cadastro_paciente
+from src.agenda_service import (
+    buscar_perfil_por_telefone,
+    criar_cadastro_paciente,
+    remover_lembrete_por_row,
+    remover_lembretes_por_appointment,
+    obter_lembretes_pendentes,
+)
 
 
 # Helpers para nomes dos dias da semana em português (usados nos títulos/descrições)
@@ -98,8 +104,11 @@ def send_reminder_to_owner(patient_name: str, date: str, time: str, isCancel: bo
     """
     owner = MSG.CLINIC_OWNER_PHONE
     if not owner:
-        logger.info("[send_reminder_to_owner] No CLINIC_OWNER_PHONE configured; skipping owner notification")
+        print("🔴 [send_reminder_to_owner] CLINIC_OWNER_PHONE NÃO está configurado em messages.py! Pulando notificação para dono")
+        logger.warning("[send_reminder_to_owner] CLINIC_OWNER_PHONE not configured in messages.py; skipping owner notification")
         return None
+
+    print(f"🟡 [send_reminder_to_owner] Preparando notificacao para dono: phone={owner}, patient={patient_name}, date={date}, time={time}, isCancel={isCancel}, isReschedule={isReschedule}")
 
     try:
         if isReschedule and old_date and old_time:
@@ -111,6 +120,7 @@ def send_reminder_to_owner(patient_name: str, date: str, time: str, isCancel: bo
                 new_date=date,
                 new_time=time
             )
+            print(f"🟡 [send_reminder_to_owner] Tipo: REAGENDAMENTO")
         elif isCancel:
             # Cancelamento simples
             text = MSG.OWNER_REMINDER_CANCEL_TEMPLATE.format(
@@ -118,6 +128,7 @@ def send_reminder_to_owner(patient_name: str, date: str, time: str, isCancel: bo
                 date=date,
                 time=time
             )
+            print(f"🟡 [send_reminder_to_owner] Tipo: CANCELAMENTO")
         else:
             # Novo agendamento
             text = MSG.OWNER_REMINDER_TEMPLATE.format(
@@ -125,10 +136,16 @@ def send_reminder_to_owner(patient_name: str, date: str, time: str, isCancel: bo
                 date=date,
                 time=time
             )
+            print(f"🟡 [send_reminder_to_owner] Tipo: NOVO AGENDAMENTO")
 
-        return send_text(owner, text)
-    except Exception:
-        logger.exception("[send_reminder_to_owner] Failed to notify owner %s", owner)
+        print(f"🟡 [send_reminder_to_owner] Enviando para {owner}...")
+        result = send_text(owner, text)
+        print(f"✅ [send_reminder_to_owner] Notificacao enviada com SUCESSO para {owner}")
+        logger.info("[send_reminder_to_owner] Notificacao enviada com sucesso para %s", owner)
+        return result
+    except Exception as e:
+        print(f"🔴 [send_reminder_to_owner] ERRO ao notificar dono {owner}: {str(e)}")
+        logger.exception("[send_reminder_to_owner] ERRO ao notificar dono %s: %s", owner, str(e))
         return None
 
 
@@ -525,33 +542,46 @@ try:
         ag_dt = datetime.fromisoformat(lemb['appointment_iso']) if lemb.get('appointment_iso') else None
         if sched <= datetime.now():
             # send immediately (interactive confirm) and mark
+            print(f"🟡 [startup] Enviando lembrete IMEDIATAMENTE (ja passou da hora): row={row}, phone={telefone}, date={lemb['appointment_date']}, time={lemb['appointment_time']}")
+            logger.info('[startup] Enviando lembrete IMEDIATAMENTE (ja passou da hora): row=%s, phone=%s, date=%s, time=%s', row, telefone, lemb['appointment_date'], lemb['appointment_time'])
+            try:
+                # try to personalize using cadastro
                 try:
-                    # try to personalize using cadastro
-                    try:
-                        perfil = buscar_perfil_por_telefone(telefone)
-                        primeiro = (perfil.get('nome') or '').split()[0] if perfil and perfil.get('nome') else ''
-                    except Exception:
-                        primeiro = ''
-                    greeting = f"Olá, {primeiro}!\n" if primeiro else ''
-                    appt_text = MSG.REMINDER_TEMPLATE.format(date=lemb['appointment_date'], time=lemb['appointment_time'])
-                    action = MSG.REMINDER_ACTION_PROMPT if hasattr(MSG, 'REMINDER_ACTION_PROMPT') else ''
-                    text = greeting + appt_text + ("\n" + action if action else "")
-                    send_reminder_confirm_buttons(telefone, text, lemb['appointment_iso'])
+                    perfil = buscar_perfil_por_telefone(telefone)
+                    primeiro = (perfil.get('nome') or '').split()[0] if perfil and perfil.get('nome') else ''
                 except Exception:
-                    logger.exception('[startup] failed to send pending reminder row=%s', row)
-                    try:
-                        # remove the reminder row after sending
-                        remover = __import__('src.agenda_service').remover_lembrete_por_row
-                        removed = remover(row)
-                        if not removed:
-                            logger.warning('[startup] failed to remove reminder row=%s (will not mark as sent)', row)
-                    except Exception:
-                        logger.exception('[startup] failed to remove reminder row=%s', row)
+                    primeiro = ''
+                greeting = f"Olá, {primeiro}!\n" if primeiro else ''
+                appt_text = MSG.REMINDER_TEMPLATE.format(date=lemb['appointment_date'], time=lemb['appointment_time'])
+                action = MSG.REMINDER_ACTION_PROMPT if hasattr(MSG, 'REMINDER_ACTION_PROMPT') else ''
+                text = greeting + appt_text + ("\n" + action if action else "")
+                print(f"🟡 [startup] Enviando lembrete para paciente {telefone}")
+                send_reminder_confirm_buttons(telefone, text, lemb['appointment_iso'])
+                print(f"✅ [startup] Lembrete enviado com sucesso para {telefone}")
+                logger.info('[startup] Lembrete enviado com sucesso para %s', telefone)
+            except Exception as e:
+                print(f"🔴 [startup] ERRO ao enviar lembrete imediato row={row} phone={telefone}: {str(e)}")
+                logger.exception('[startup] ERRO ao enviar lembrete imediato row=%s phone=%s: %s', row, telefone, str(e))
+            try:
+                # remove the reminder row after sending
+                print(f"🟡 [startup] Tentando remover lembrete da linha {row}")
+                removed = remover_lembrete_por_row(row)
+                if removed:
+                    print(f"✅ [startup] Lembrete (linha {row}) removido com SUCESSO")
+                    logger.info('[startup] Lembrete (linha %s) removido com SUCESSO', row)
+                else:
+                    print(f"🔴 [startup] Falha ao remover lembrete (linha {row}) - retornou False")
+                    logger.warning('[startup] Falha ao remover lembrete (linha %s) - retornou False', row)
+            except Exception as e:
+                print(f"🔴 [startup] ERRO ao remover lembrete da linha {row}: {str(e)}")
+                logger.exception('[startup] ERRO ao remover lembrete da linha %s: %s', row, str(e))
         else:
             # schedule for future
             try:
                 from src.scheduler import schedule_at
                 def _send_and_mark_start(row=row, phone=telefone, date_text=lemb['appointment_date'], time_text=lemb['appointment_time'], appt_iso=lemb.get('appointment_iso')):
+                    print(f"🟡 [startup._send_and_mark_start] Iniciando envio de lembrete agendado: row={row}, phone={phone}, date={date_text}, time={time_text}")
+                    logger.info('[startup._send_and_mark_start] Iniciando envio de lembrete agendado: row=%s, phone=%s, date=%s, time=%s', row, phone, date_text, time_text)
                     try:
                         # lookup perfil at runtime to personalize
                         try:
@@ -563,16 +593,25 @@ try:
                         appt_text = MSG.REMINDER_TEMPLATE.format(date=date_text, time=time_text)
                         action = MSG.REMINDER_ACTION_PROMPT if hasattr(MSG, 'REMINDER_ACTION_PROMPT') else ''
                         texto = greeting + appt_text + ("\n" + action if action else "")
+                        print(f"🟡 [startup._send_and_mark_start] Enviando lembrete para paciente {phone}")
                         send_reminder_confirm_buttons(phone, texto, appt_iso)
-                    except Exception:
-                        logger.exception('[startup] failed sending scheduled reminder row=%s', row)
+                        print(f"✅ [startup._send_and_mark_start] Lembrete enviado com sucesso para {phone}")
+                        logger.info('[startup._send_and_mark_start] Lembrete enviado com sucesso para %s', phone)
+                    except Exception as e:
+                        print(f"🔴 [startup._send_and_mark_start] ERRO ao enviar lembrete agendado row={row} phone={phone}: {str(e)}")
+                        logger.exception('[startup._send_and_mark_start] ERRO ao enviar lembrete agendado row=%s phone=%s: %s', row, phone, str(e))
                     try:
-                        remover = __import__('src.agenda_service').remover_lembrete_por_row
-                        removed = remover(row)
-                        if not removed:
-                            logger.warning('[startup] failed to remove scheduled reminder row=%s (will not mark as sent)', row)
-                    except Exception:
-                        logger.exception('[startup] failed to remove scheduled reminder row=%s', row)
+                        print(f"🟡 [startup._send_and_mark_start] Tentando remover lembrete da linha {row}")
+                        removed = remover_lembrete_por_row(row)
+                        if removed:
+                            print(f"✅ [startup._send_and_mark_start] Lembrete (linha {row}) removido com SUCESSO")
+                            logger.info('[startup._send_and_mark_start] Lembrete (linha %s) removido com SUCESSO', row)
+                        else:
+                            print(f"🔴 [startup._send_and_mark_start] Falha ao remover lembrete (linha {row}) - retornou False")
+                            logger.warning('[startup._send_and_mark_start] Falha ao remover lembrete (linha %s) - retornou False', row)
+                    except Exception as e:
+                        print(f"🔴 [startup._send_and_mark_start] ERRO ao remover lembrete da linha {row}: {str(e)}")
+                        logger.exception('[startup._send_and_mark_start] ERRO ao remover lembrete da linha %s: %s', row, str(e))
                 schedule_at(sched, _send_and_mark_start)
             except Exception:
                 logger.exception('[startup] failed to schedule pending reminder row=%s', row)
@@ -645,8 +684,7 @@ async def webhook(request: Request):
                                             logger.exception('[rem_handler] failed sending confirmation message')
                                         # remove any matching lembretes for this appointment
                                         try:
-                                            remover = __import__('src.agenda_service').remover_lembretes_por_appointment
-                                            remover(app_iso, from_number)
+                                            remover_lembretes_por_appointment(app_iso, from_number)
                                         except Exception:
                                             logger.exception('[rem_handler] failed removing lembretes for appointment')
                                         # handled — continue to next message
@@ -664,12 +702,26 @@ async def webhook(request: Request):
                                                 logger.exception('[rem_handler] fail cancel')
                                         if cancelled:
                                             send_text(from_number, MSG.REMINDER_CANCELLED_MSG)
+                                            # Notificar dono sobre o cancelamento via reminder
+                                            try:
+                                                perfil = buscar_perfil_por_telefone(from_number)
+                                                nome_paciente = perfil.get('nome', '') if perfil else ''
+                                                print(f"🟡 [rem_handler] Enviando notificacao de CANCELAMENTO (via reminder) ao dono")
+                                                send_reminder_to_owner(
+                                                    patient_name=nome_paciente,
+                                                    date=dt.strftime('%d/%m/%Y') if dt else '',
+                                                    time=dt.strftime('%H:%M') if dt else '',
+                                                    isCancel=True
+                                                )
+                                                print(f"✅ [rem_handler] Notificacao de cancelamento enviada com SUCESSO ao dono")
+                                            except Exception as e:
+                                                print(f"🔴 [rem_handler] Erro ao notificar dono sobre cancelamento: {e}")
+                                                logger.exception('[rem_handler] Failed to notify owner about cancellation: %s', e)
                                         else:
                                             send_text(from_number, 'Não foi possível cancelar. Tente novamente.')
                                         # remove matching lembretes
                                         try:
-                                            remover = __import__('src.agenda_service').remover_lembretes_por_appointment
-                                            remover(app_iso, from_number)
+                                            remover_lembretes_por_appointment(app_iso, from_number)
                                         except Exception:
                                             logger.exception('[rem_handler] failed removing lembretes for appointment')
                                         continue

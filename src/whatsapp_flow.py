@@ -403,11 +403,13 @@ def processar_mensagem(usuario_id, mensagem):
             # Detectar se é reagendamento
             reagendar_antigo_key = SessionKeys.get_user_key(usuario_id, SessionKeys.REAGENDAR_ANTIGO)
             is_reagendamento = reagendar_antigo_key in sessoes
+            logger.info(f"[confirmacao_agendamento] DEBUG: reagendar_antigo_key={reagendar_antigo_key}, in_sessoes={is_reagendamento}, sessoes_keys={list(sessoes.keys())}")
 
             # Se for reagendamento, guardar dados do agendamento antigo antes de cancelar
             old_appointment_dt = None
             if is_reagendamento:
                 old_appointment_dt = sessoes[reagendar_antigo_key]
+                logger.info(f"[confirmacao_agendamento] Reagendamento detectado! old_appointment_dt={old_appointment_dt}")
                 from src.agenda_service import cancelar_agendamento_por_data_hora
                 cancelar_agendamento_por_data_hora(old_appointment_dt)
                 sessoes.pop(reagendar_antigo_key, None)
@@ -429,15 +431,21 @@ def processar_mensagem(usuario_id, mensagem):
 
                 reminder_dt = horario - timedelta(hours=MSG.REMINDER_HOURS_BEFORE)
 
+                row_idx = None
                 try:
                     row_idx = registrar_lembrete_agendamento(
                         horario, reminder_dt, usuario_id, nome_paciente,
                         tipo="patient_reminder", observacoes="Agendado via bot"
                     )
-                except Exception:
+                    print(f"✅ [confirmacao_agendamento] Lembrete registrado na linha {row_idx}")
+                    logger.info(f"[confirmacao_agendamento] Lembrete registrado na linha {row_idx}")
+                except Exception as e:
+                    print(f"🔴 [confirmacao_agendamento] ERRO ao registrar lembrete: {e}")
+                    logger.exception(f"[confirmacao_agendamento] ERRO ao registrar lembrete: {e}")
                     row_idx = None
 
                 def _send_and_mark(row=row_idx, phone=usuario_id, dt=horario, patient=nome_paciente):
+                    print(f"🟡 [_send_and_mark] Iniciando envio de lembrete: row={row}, phone={phone}, dt={dt}")
                     try:
                         primeiro = (patient or '').split()[0] if patient else ''
                         greeting = f"Olá, {primeiro}!\n" if primeiro else ''
@@ -447,26 +455,49 @@ def processar_mensagem(usuario_id, mensagem):
                         )
                         action = MSG.REMINDER_ACTION_PROMPT if hasattr(MSG, 'REMINDER_ACTION_PROMPT') else ''
                         text = greeting + appt_text + ("\n" + action if action else "")
-                        __import__('src.whatsapp_webhook').send_reminder_confirm_buttons(phone, text, dt.isoformat())
-                    except Exception:
-                        logger.exception('failed sending reminder')
+                        print(f"🟡 [_send_and_mark] Enviando lembrete para paciente {phone}")
+                        from src import whatsapp_webhook
+                        whatsapp_webhook.send_reminder_confirm_buttons(phone, text, dt.isoformat())
+                        print(f"✅ [_send_and_mark] Lembrete enviado com sucesso para {phone}")
+                        logger.info(f"[_send_and_mark] Lembrete enviado com sucesso para {phone}")
+                    except Exception as e:
+                        print(f"🔴 [_send_and_mark] ERRO ao enviar lembrete para {phone}: {e}")
+                        logger.exception(f'[_send_and_mark] ERRO ao enviar lembrete para {phone}: {e}')
+
+                    # Tentar deletar o lembrete da planilha
                     try:
                         if row:
-                            __import__('src.agenda_service').remover_lembrete_por_row(row)
-                    except Exception:
-                        pass
+                            print(f"🟡 [_send_and_mark] Tentando remover lembrete da linha {row}")
+                            removed = remover_lembrete_por_row(row)
+                            if removed:
+                                print(f"✅ [_send_and_mark] Lembrete (linha {row}) removido com SUCESSO")
+                                logger.info(f"[_send_and_mark] Lembrete (linha {row}) removido com SUCESSO")
+                            else:
+                                print(f"🔴 [_send_and_mark] Falha ao remover lembrete (linha {row}) - retornou False")
+                                logger.warning(f"[_send_and_mark] Falha ao remover lembrete (linha {row}) - retornou False")
+                        else:
+                            print(f"🔴 [_send_and_mark] row_idx é None, não removendo lembrete")
+                            logger.warning(f"[_send_and_mark] row_idx é None, não removendo lembrete")
+                    except Exception as e:
+                        print(f"🔴 [_send_and_mark] ERRO ao remover lembrete (linha {row}): {e}")
+                        logger.exception(f"[_send_and_mark] ERRO ao remover lembrete (linha {row}): {e}")
 
                 if reminder_dt > datetime.now():
+                    print(f"🟡 [confirmacao_agendamento] Agendando lembrete para {reminder_dt}")
+                    logger.info(f"[confirmacao_agendamento] Agendando lembrete para {reminder_dt}")
                     schedule_at(reminder_dt, _send_and_mark)
                 else:
+                    print(f"🟡 [confirmacao_agendamento] Enviando lembrete imediatamente (já passou da hora de agendamento)")
+                    logger.info(f"[confirmacao_agendamento] Enviando lembrete imediatamente (já passou da hora de agendamento)")
                     _send_and_mark()
 
                 # Notificar dono da clínica
                 try:
-                    webhook = __import__('src.whatsapp_webhook')
+                    from src import whatsapp_webhook
                     if is_reagendamento and old_appointment_dt:
                         # Reagendamento: envia mensagem única com dados antigos e novos
-                        webhook.send_reminder_to_owner(
+                        logger.info(f"[confirmacao_agendamento] Enviando notificacao de REAGENDAMENTO ao dono")
+                        whatsapp_webhook.send_reminder_to_owner(
                             patient_name=nome_paciente,
                             date=horario.strftime('%d/%m/%Y'),
                             time=horario.strftime('%H:%M'),
@@ -474,15 +505,24 @@ def processar_mensagem(usuario_id, mensagem):
                             old_date=old_appointment_dt.strftime('%d/%m/%Y'),
                             old_time=old_appointment_dt.strftime('%H:%M')
                         )
-                    else:
-                        # Novo agendamento simples
-                        webhook.send_reminder_to_owner(
+                    elif is_reagendamento and not old_appointment_dt:
+                        logger.warning(f"[confirmacao_agendamento] REAGENDAMENTO detectado mas old_appointment_dt eh None!")
+                        # Novo agendamento simples como fallback
+                        whatsapp_webhook.send_reminder_to_owner(
                             patient_name=nome_paciente,
                             date=horario.strftime('%d/%m/%Y'),
                             time=horario.strftime('%H:%M')
                         )
-                except Exception:
-                    pass
+                    else:
+                        # Novo agendamento simples
+                        logger.info(f"[confirmacao_agendamento] Enviando notificacao de NOVO AGENDAMENTO ao dono")
+                        whatsapp_webhook.send_reminder_to_owner(
+                            patient_name=nome_paciente,
+                            date=horario.strftime('%d/%m/%Y'),
+                            time=horario.strftime('%H:%M')
+                        )
+                except Exception as e:
+                    logger.exception(f"[confirmacao_agendamento] Erro ao notificar dono: {e}")
             except Exception:
                 pass
 
@@ -561,14 +601,16 @@ def processar_mensagem(usuario_id, mensagem):
                     time=dt.strftime('%H:%M')
                 )
                 try:
-                    __import__('src.whatsapp_webhook').send_reminder_to_owner(
+                    logger.info(f"[confirmacao_cancelamento] Enviando notificacao de CANCELAMENTO ao dono")
+                    from src import whatsapp_webhook
+                    whatsapp_webhook.send_reminder_to_owner(
                         nome_para_notif or "",
                         dt.strftime('%d/%m/%Y') if dt else '',
                         dt.strftime('%H:%M') if dt else '',
                         isCancel=True
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.exception(f"[confirmacao_cancelamento] Erro ao notificar dono: {e}")
                 return build_return_to_menu_message(msg_cancelamento)
             else:
                 return build_return_to_menu_message("Falha ao cancelar.")
