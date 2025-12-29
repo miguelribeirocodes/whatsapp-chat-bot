@@ -251,11 +251,11 @@ class SheetColumns:
 # ============================================================================
 
 NOMES_DIAS_PT = [
-    'Segunda-feira',
-    'Terça-feira',
-    'Quarta-feira',
-    'Quinta-feira',
-    'Sexta-feira',
+    'Segunda',
+    'Terça',
+    'Quarta',
+    'Quinta',
+    'Sexta',
     'Sábado',
     'Domingo'
 ]

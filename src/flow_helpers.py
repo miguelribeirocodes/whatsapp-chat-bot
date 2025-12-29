@@ -15,7 +15,7 @@ from src.constants import NOMES_DIAS_PT
 def format_data_pt(dt: Optional[date]) -> str:
     """
     Formata uma data em português.
-    Exemplo: "Segunda-feira, 23/12/2025"
+    Exemplo: "Segunda, 23/12/2025"
     """
     if dt is None:
         return ''
@@ -34,7 +34,7 @@ def format_hora(dt: datetime) -> str:
 def format_data_hora_completa(dt: datetime) -> str:
     """
     Formata data e hora completa.
-    Exemplo: "Segunda-feira, 23/12/2025 às 14:30"
+    Exemplo: "Segunda, 23/12/2025 às 14:30"
     """
     return f"{format_data_pt(dt.date())} às {format_hora(dt)}"
 

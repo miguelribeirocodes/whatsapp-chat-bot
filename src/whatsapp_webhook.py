@@ -21,8 +21,8 @@ from src.agenda_service import (
 def _abbr_weekday(idx: int) -> str:  # retorna abreviação do dia da semana em PT
     return ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'][idx]  # valores abreviados
 
-def _full_weekday(idx: int) -> str:  # retorna o nome completo do dia da semana em PT
-    return ['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'][idx]  # valores completos
+def _full_weekday(idx: int) -> str:  # retorna o nome completo do dia da semana em PT (sem "-feira" para consistência)
+    return ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'][idx]  # valores sem "-feira"
 
 load_dotenv()  # carrega variáveis de ambiente de um arquivo .env quando presente
 
@@ -877,14 +877,12 @@ async def webhook(request: Request):
                     items = []  # prepara lista de rows
                     for i, d in enumerate(dias):  # formata cada dia
                         dia_pt = d.strftime('%d/%m/%Y')  # data formatada
-                        semana_abrev = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][d.weekday()]  # abreviatura
-                        semana_pt = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'][d.weekday()]  # nome completo
-                        title_full = f"{semana_pt}, {dia_pt}"  # título completo
-                        # WhatsApp list row title max 24 chars — fallback para abreviação
-                        if len(title_full) > 24:
-                            title = f"{semana_abrev}, {dia_pt}"
-                        else:
-                            title = title_full
+                        semana_pt = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'][d.weekday()]  # nome sem "-feira" (mais conciso e consistente)
+                        semana_abrev = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][d.weekday()]  # abreviatura (fallback se necessário)
+                        title = f"{semana_pt}, {dia_pt}"  # formato: "Segunda, 23/12/2025"
+                        # WhatsApp list row title max 24 chars — fallback para abreviação se necessário
+                        if len(title) > 24:
+                            title = f"{semana_abrev}, {dia_pt}"  # fallback: "Seg, 23/12/2025"
                         # Usar descrição vazia para evitar duplicação visual
                         items.append((f"{i+1}", title, ""))  # adiciona item sem descrição
                     # acrescenta Voltar/Cancelar como opções de lista (descrição vazia para evitar duplicação)

@@ -38,9 +38,9 @@ from src.flow_helpers import (
 
 logger = logging.getLogger(__name__)
 
-# Helper: weekday names in Portuguese
+# Helper: weekday names in Portuguese (sem "-feira" para consistência visual)
 _WEEKDAY_PT = [
-    'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'
+    'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'
 ]
 
 def _format_data_pt(dt):
