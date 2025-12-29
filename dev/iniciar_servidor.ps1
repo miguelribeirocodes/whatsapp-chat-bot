@@ -2,8 +2,9 @@
 # IMPORTANTE: Este script desabilita completamente o ngrok automático
 # Funciona em qualquer computador/usuário
 
-# Determinar diretório do projeto (relativo ao script)
-$PROJECT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Determinar diretório do projeto (sobe um nível da pasta dev/)
+$SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
+$PROJECT_DIR = Split-Path -Parent $SCRIPT_DIR
 $VENV_PATH = Join-Path $PROJECT_DIR ".venv"
 $PYTHON_EXE = Join-Path $VENV_PATH "Scripts" "python.exe"
 $VENV_ACTIVATE = Join-Path $VENV_PATH "Scripts" "Activate.ps1"
