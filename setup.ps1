@@ -1,5 +1,5 @@
-# Script de Setup - Inicializa o projeto em qualquer computador/usuário
-# Execute uma única vez em cada computador novo
+# Script de Setup - Inicializa o projeto em qualquer computador/usuario
+# Execute uma unica vez em cada computador novo
 
 # Cores para output
 $SUCCESS = "Green"
@@ -7,13 +7,13 @@ $ERROR_COLOR = "Red"
 $INFO = "Cyan"
 $WARN = "Yellow"
 
-# Determinar diretório do projeto
+# Determinar diretorio do projeto
 $PROJECT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $VENV_PATH = Join-Path $PROJECT_DIR ".venv"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor $INFO
-Write-Host "🚀 Setup do Chat Bot Agendador" -ForegroundColor $INFO
+Write-Host "Setup do Chat Bot Agendador" -ForegroundColor $INFO
 Write-Host "========================================" -ForegroundColor $INFO
 Write-Host ""
 Write-Host "Projeto: $PROJECT_DIR" -ForegroundColor Gray
@@ -23,23 +23,23 @@ Write-Host ""
 Write-Host "[1/4] Verificando Python..." -ForegroundColor $INFO
 $PYTHON_VERSION = python --version 2>&1
 if ($?) {
-    Write-Host "✓ $PYTHON_VERSION encontrado" -ForegroundColor $SUCCESS
+    Write-Host "OK: $PYTHON_VERSION encontrado" -ForegroundColor $SUCCESS
 } else {
-    Write-Host "❌ Python não está instalado ou não está no PATH" -ForegroundColor $ERROR_COLOR
+    Write-Host "ERRO: Python nao esta instalado ou nao esta no PATH" -ForegroundColor $ERROR_COLOR
     Write-Host "Baixe em: https://www.python.org/downloads/" -ForegroundColor $WARN
     exit 1
 }
 
-# Etapa 2: Deletar venv antigo (se existir de outro usuário)
+# Etapa 2: Deletar venv antigo (se existir de outro usuario)
 if (Test-Path $VENV_PATH) {
     Write-Host ""
     Write-Host "[2/4] Removendo ambiente virtual antigo..." -ForegroundColor $INFO
     Write-Host "Deletando $VENV_PATH" -ForegroundColor Gray
     try {
         Remove-Item -Recurse -Force $VENV_PATH
-        Write-Host "✓ Deletado com sucesso" -ForegroundColor $SUCCESS
+        Write-Host "OK: Deletado com sucesso" -ForegroundColor $SUCCESS
     } catch {
-        Write-Host "❌ Erro ao deletar venv" -ForegroundColor $ERROR_COLOR
+        Write-Host "ERRO: Erro ao deletar venv" -ForegroundColor $ERROR_COLOR
         Write-Host "Feche todos os programas Python/VS Code e tente novamente" -ForegroundColor $WARN
         exit 1
     }
@@ -53,16 +53,16 @@ Write-Host "[3/4] Criando novo ambiente virtual..." -ForegroundColor $INFO
 Write-Host "Isso pode levar 1-2 minutos..." -ForegroundColor Gray
 python -m venv $VENV_PATH
 if ($?) {
-    Write-Host "✓ Ambiente virtual criado" -ForegroundColor $SUCCESS
+    Write-Host "OK: Ambiente virtual criado" -ForegroundColor $SUCCESS
 } else {
-    Write-Host "❌ Erro ao criar venv" -ForegroundColor $ERROR_COLOR
+    Write-Host "ERRO: Erro ao criar venv" -ForegroundColor $ERROR_COLOR
     exit 1
 }
 
-# Etapa 4: Instalar dependências
+# Etapa 4: Instalar dependencias
 Write-Host ""
-Write-Host "[4/4] Instalando dependências..." -ForegroundColor $INFO
-Write-Host "Isso pode levar 2-5 minutos dependendo da conexão..." -ForegroundColor Gray
+Write-Host "[4/4] Instalando dependencias..." -ForegroundColor $INFO
+Write-Host "Isso pode levar 2-5 minutos dependendo da conexao..." -ForegroundColor Gray
 
 # Ativar venv
 $VENV_ACTIVATE = Join-Path $VENV_PATH "Scripts" "Activate.ps1"
@@ -72,24 +72,24 @@ $VENV_ACTIVATE = Join-Path $VENV_PATH "Scripts" "Activate.ps1"
 Write-Host "Atualizando pip..." -ForegroundColor Gray
 python -m pip install --upgrade pip --quiet
 
-# Instalar dependências
+# Instalar dependencias
 Write-Host "Instalando requirements.txt..." -ForegroundColor Gray
 pip install -r requirements.txt --quiet
 
 if ($?) {
-    Write-Host "✓ Dependências instaladas" -ForegroundColor $SUCCESS
+    Write-Host "OK: Dependencias instaladas" -ForegroundColor $SUCCESS
 } else {
-    Write-Host "❌ Erro ao instalar dependências" -ForegroundColor $ERROR_COLOR
+    Write-Host "ERRO: Erro ao instalar dependencias" -ForegroundColor $ERROR_COLOR
     exit 1
 }
 
 # Sucesso!
 Write-Host ""
 Write-Host "========================================" -ForegroundColor $SUCCESS
-Write-Host "✅ SETUP CONCLUÍDO COM SUCESSO!" -ForegroundColor $SUCCESS
+Write-Host "SETUP CONCLUIDO COM SUCESSO!" -ForegroundColor $SUCCESS
 Write-Host "========================================" -ForegroundColor $SUCCESS
 Write-Host ""
-Write-Host "Próximos passos:" -ForegroundColor $INFO
+Write-Host "Proximos passos:" -ForegroundColor $INFO
 Write-Host "1. Configure o arquivo .env com suas credenciais:" -ForegroundColor Gray
 Write-Host "   - WHATSAPP_TOKEN" -ForegroundColor Gray
 Write-Host "   - WHATSAPP_PHONE_ID" -ForegroundColor Gray
