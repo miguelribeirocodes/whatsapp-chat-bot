@@ -1,0 +1,69 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║          RESUMO DO DIAGNÓSTICO - BOT NÃO RECEBIA MENSAGENS                 ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+📋 PROBLEMA
+-----------
+Bot ENVIAVA mensagens normalmente ✅
+Bot NÃO RECEBIA mensagens do usuário ❌
+
+🔍 DIAGNÓSTICO
+--------------
+Root cause: ngrok URL persistente já estava em uso por outra instância
+- URL bloqueada: https://legalistic-unable-rob.ngrok-free.dev
+- Erro: "The endpoint 'legalistic-unable-rob.ngrok-free.dev' is already online"
+- Razão: Você tem um ngrok premium com URL fixa que está sendo usada em outro computador
+
+🔧 SOLUÇÕES IMPLEMENTADAS
+-------------------------
+1. ✅ Modificado src/ngrok_service.py:
+   - load_dotenv(override=True) - força releitura de .env
+   - ngrok.connect(..., bind_tls=True) - suporta TLS
+
+2. ✅ Criados scripts PowerShell:
+   - iniciar_servidor.ps1 - inicia SEM ngrok automático
+   - start_webhook.ps1 - alternativa
+
+3. ✅ Documentação detalhada:
+   - PROXIMAS_ETAPAS.md - guia passo a passo para retomada
+   - SOLUCAO_WEBHOOK.md - explicação completa
+   - PROBLEMA_NGROK_RESOLVIDO.md - análise técnica
+   - GUIA_RAPIDO_WEBHOOK.md - quick reference
+
+⏸️ STATUS
+--------
+Pausado - Aguardando acesso ao outro computador para:
+1. Parar a instância ngrok lá rodando
+2. Limpar cache do ngrok localmente
+3. Reabilitar ngrok (NGROK_ENABLED=true)
+4. Iniciar servidor e capturar nova URL
+5. Configurar nova URL no Meta for Developers
+6. Testar recepção de mensagens
+
+🚀 PRÓXIMO PASSO
+----------------
+Leia: PROXIMAS_ETAPAS.md para instruções completas de retomada
+
+⏰ REFERÊNCIA RÁPIDA
+-------------------
+
+VARIÁVEIS IMPORTANTES:
+- WHATSAPP_PHONE_ID: 744785382061587
+- VERIFY_TOKEN: OTljYjY3MWUtMmMxMy00MTM4LTk0MTQtYWM2MzI3MTRjZDUz
+- URL ANTIGA (BLOQUEADA): https://legalistic-unable-rob.ngrok-free.dev/webhook
+
+QUANDO RETORNAR, EXECUTE:
+1. Parar ngrok no outro computador
+2. Remove-Item -Path "$env:USERPROFILE\.ngrok2" -Recurse -Force
+3. Mudar .env: NGROK_ENABLED=true
+4. .\iniciar_servidor.ps1
+5. Capturar nova URL dos logs
+6. Configurar no Meta for Developers
+7. Testar
+
+════════════════════════════════════════════════════════════════════════════
+
+Data: 2025-12-26
+Commit: 620340d
+Branch: main
+Status: ⏸️ Pausado - Pronto para retomada
