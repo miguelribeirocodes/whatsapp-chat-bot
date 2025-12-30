@@ -230,12 +230,17 @@ def get_future_appointments(usuario_id: str = None) -> List[Tuple[datetime, List
     """
     from src.agenda_service import obter_todos_agenda_cached
     from src.constants import SheetColumns
+    import logging
+    logger = logging.getLogger(__name__)
 
     todos = obter_todos_agenda_cached()[1:]  # Ignora cabeçalho
     agora = datetime.now()
     agendamentos = []
 
-    for linha in todos:
+    # DEBUG: Log para diagnóstico
+    logger.info(f"[get_future_appointments] agora={agora}, total_linhas={len(todos)}")
+
+    for i, linha in enumerate(todos):
         # Validação básica
         if len(linha) < 6:
             continue
@@ -245,16 +250,21 @@ def get_future_appointments(usuario_id: str = None) -> List[Tuple[datetime, List
         if status != SheetColumns.STATUS_AGENDADO:
             continue
 
+        # DEBUG: Linha com status AGENDADO encontrada
+        logger.info(f"[get_future_appointments] Linha {i+2} AGENDADO: {linha[:6]}")
+
         # Parse data e hora
         data_str = linha[SheetColumns.AGENDA_DATA].strip()
         hora_str = linha[SheetColumns.AGENDA_HORA].strip()
         try:
             dt = datetime.strptime(f"{data_str} {hora_str}", "%d/%m/%Y %H:%M")
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[get_future_appointments] Linha {i+2} ERRO parse: data='{data_str}' hora='{hora_str}' erro={e}")
             continue
 
         # Apenas futuros
         if dt < agora:
+            logger.info(f"[get_future_appointments] Linha {i+2} PASSADO: dt={dt} < agora={agora}")
             continue
 
         # Filtro opcional por usuário
@@ -263,10 +273,12 @@ def get_future_appointments(usuario_id: str = None) -> List[Tuple[datetime, List
             if telefone != usuario_id:
                 continue
 
+        logger.info(f"[get_future_appointments] Linha {i+2} ADICIONADO: dt={dt}")
         agendamentos.append((dt, linha))
 
     # Ordenar por data/hora
     agendamentos.sort()
+    logger.info(f"[get_future_appointments] Total agendamentos futuros: {len(agendamentos)}")
     return agendamentos
 
 

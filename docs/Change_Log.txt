@@ -28,5 +28,4 @@ Obs.: usar o "GUIA_DESENVOLVEDOR.md" para a IA entender melhor como fazer altera
 
 Próximos passos:
 
-- Sistema de logging mais limpo, configurável e com data e hora
 - Comprar chip e criar conta no whatsapp business
