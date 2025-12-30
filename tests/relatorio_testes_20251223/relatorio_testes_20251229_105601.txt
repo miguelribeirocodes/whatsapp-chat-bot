@@ -1,0 +1,58 @@
+================================================================================
+RELATÓRIO DE TESTES DO FLUXO CONVERSACIONAL
+================================================================================
+Data/Hora: 2025-12-29 10:56:01
+Total de testes: 10
+[PASSOU] 10
+[FALHOU] 0
+
+================================================================================
+RESUMO
+================================================================================
+Taxa de sucesso: 100.0%
+
+================================================================================
+DETALHES DOS TESTES
+================================================================================
+
+[1] [PASSOU] - Menu principal -> Agendar -> Voltar -> Menu
+    Sequencia: 1 -> 9
+    Detalhes: Sequência executada sem erros
+
+[2] [PASSOU] - Menu principal -> Agendar -> Semana -> Dia -> Horário -> Confirmar
+    Sequencia: 1 -> 1 -> 1
+               ... (5 inputs no total)
+    Detalhes: Sequência executada sem erros
+
+[3] [PASSOU] - Menu -> Cancelar (sem agendamentos)
+    Sequencia: 3
+    Detalhes: Sequência executada sem erros
+
+[4] [PASSOU] - Menu principal com input inválido
+    Sequencia: abc -> 1
+    Detalhes: Sequência executada sem erros
+
+[5] [PASSOU] - Agendar com input aleatório em semana
+    Sequencia: 1 -> xyz -> 1
+    Detalhes: Sequência executada sem erros
+
+[6] [PASSOU] - Agendar -> Semana -> input inválido dia
+    Sequencia: 1 -> 1 -> 999
+               ... (4 inputs no total)
+    Detalhes: Sequência executada sem erros
+
+[7] [PASSOU] - Input vazio no menu
+    Sequencia:  -> 1
+    Detalhes: Sequência executada sem erros
+
+[8] [PASSOU] - Saudação com espaços extras
+    Sequencia:   oi   -> 1
+    Detalhes: Sequência executada sem erros
+
+[9] [PASSOU] - Menu -> Agendar -> Voltar -> Menu -> Reagendar
+    Sequencia: 1 -> 9 -> 2
+    Detalhes: Sequência executada sem erros
+
+[10] [PASSOU] - Menu -> Cancelar -> Voltar -> Agendar
+    Sequencia: 3 -> 9 -> 1
+    Detalhes: Sequência executada sem erros
