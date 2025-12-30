@@ -23,7 +23,7 @@ build/
 .env.*.local
 
 # Credentials & Secrets
-service_account.json
+# service_account.json
 *.key
 *.pem
 
