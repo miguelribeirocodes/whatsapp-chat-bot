@@ -625,8 +625,14 @@ async def verify(request: Request):
     mode = params.get('hub.mode') or params.get('hub.mode')  # lê modo de submissão
     challenge = params.get('hub.challenge')  # obtém challenge enviado pelo Facebook
     token = params.get('hub.verify_token') or params.get('hub.verify_token')  # lê verify token
+
+    logger.info(f"[webhook-verify] mode={mode}, token_len={len(token) if token else 0}, challenge={challenge}")
+
     if mode == 'subscribe' and token == VERIFY_TOKEN:  # valida token recebido
+        logger.info(f"[webhook-verify] ✅ Validation success, returning challenge={challenge}")
         return Response(content=challenge, media_type="text/plain")  # retorna challenge como plain text
+
+    logger.warning(f"[webhook-verify] ❌ Validation failed - mode={mode}, token_match={token == VERIFY_TOKEN}")
     raise HTTPException(status_code=403, detail='Verification failed')  # se inválido, retorna 403
 
 
