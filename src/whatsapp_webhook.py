@@ -906,15 +906,9 @@ async def webhook(request: Request):
                     items = []  # prepara items
                     for i, (dt, linha) in enumerate(ags):  # formata cada agendamento
                         paciente = (linha[3] or 'Paciente')
-                        full_text = f"{_full_weekday(dt.weekday())}, {dt.strftime('%d/%m/%Y %H:%M')}"
-                        # If full text fits in title limit, show full datetime as title and keep description minimal
-                        if len(full_text) <= 24:
-                            title = full_text
-                            desc = paciente
-                        else:
-                            # Use short title (abbr weekday + date) and put time + patient in description
-                            title = f"{_abbr_weekday(dt.weekday())}, {dt.strftime('%d/%m')}"
-                            desc = f"{dt.strftime('%H:%M')} - {paciente}"
+                        # Sempre usar abreviação para consistência (Seg, Ter, etc)
+                        title = f"{_abbr_weekday(dt.weekday())}, {dt.strftime('%d/%m')}"
+                        desc = f"{dt.strftime('%H:%M')} - {paciente}"
                         items.append((f"{i+1}", title, desc))  # adiciona item com descrição
                     items.append(("0", MSG.LABEL_VOLTA, ""))  # Voltar
                     items.append(("9", MSG.LABEL_CANCEL, ""))  # Cancelar
@@ -924,13 +918,9 @@ async def webhook(request: Request):
                     items = []  # prepara items
                     for i, (dt, linha) in enumerate(ags):  # formata cada agendamento
                         paciente = (linha[3] or 'Paciente')
-                        full_text = f"{_full_weekday(dt.weekday())}, {dt.strftime('%d/%m/%Y %H:%M')}"
-                        if len(full_text) <= 24:
-                            title = full_text
-                            desc = paciente
-                        else:
-                            title = f"{_abbr_weekday(dt.weekday())}, {dt.strftime('%d/%m')}"
-                            desc = f"{dt.strftime('%H:%M')} - {paciente}"
+                        # Sempre usar abreviação para consistência (Seg, Ter, etc)
+                        title = f"{_abbr_weekday(dt.weekday())}, {dt.strftime('%d/%m')}"
+                        desc = f"{dt.strftime('%H:%M')} - {paciente}"
                         items.append((f"{i+1}", title, desc))  # adiciona com descrição
                     items.append(("0", MSG.LABEL_VOLTA, ""))  # Voltar
                     items.append(("9", MSG.LABEL_CANCEL_APPOINTMENT, ""))  # Cancelar Agendamento (rótulo diferenciado)
