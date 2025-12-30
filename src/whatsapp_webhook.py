@@ -890,12 +890,8 @@ async def webhook(request: Request):
                     items = []  # prepara lista de rows
                     for i, d in enumerate(dias):  # formata cada dia
                         dia_pt = d.strftime('%d/%m/%Y')  # data formatada
-                        semana_pt = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'][d.weekday()]  # nome sem "-feira" (mais conciso e consistente)
-                        semana_abrev = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][d.weekday()]  # abreviatura (fallback se necessário)
-                        title = f"{semana_pt}, {dia_pt}"  # formato: "Segunda, 23/12/2025"
-                        # WhatsApp list row title max 24 chars — fallback para abreviação se necessário
-                        if len(title) > 24:
-                            title = f"{semana_abrev}, {dia_pt}"  # fallback: "Seg, 23/12/2025"
+                        semana_abrev = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][d.weekday()]  # sempre usar abreviação para consistência
+                        title = f"{semana_abrev}, {dia_pt}"  # formato: "Seg, 23/12/2025" (sempre cabe em 24 chars)
                         # Usar descrição vazia para evitar duplicação visual
                         items.append((f"{i+1}", title, ""))  # adiciona item sem descrição
                     # acrescenta Voltar/Cancelar como opções de lista (descrição vazia para evitar duplicação)
