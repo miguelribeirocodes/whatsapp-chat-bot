@@ -345,7 +345,7 @@ def send_weeks_buttons(to: str, text: str):
                 "buttons": [
                     {"type": "reply", "reply": {"id": "1", "title": MSG.WEEK_THIS}},
                     {"type": "reply", "reply": {"id": "2", "title": MSG.WEEK_NEXT}},
-                    {"type": "reply", "reply": {"id": "9", "title": MSG.LABEL_CANCEL}}
+                    {"type": "reply", "reply": {"id": "0", "title": MSG.LABEL_VOLTA}}
                 ]
             }
         }
