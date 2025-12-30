@@ -626,7 +626,7 @@ async def verify(request: Request):
     challenge = params.get('hub.challenge')  # obtém challenge enviado pelo Facebook
     token = params.get('hub.verify_token') or params.get('hub.verify_token')  # lê verify token
     if mode == 'subscribe' and token == VERIFY_TOKEN:  # valida token recebido
-        return int(challenge)  # retorna challenge para concluir verificação
+        return challenge  # retorna challenge como string para concluir verificação
     raise HTTPException(status_code=403, detail='Verification failed')  # se inválido, retorna 403
 
 
