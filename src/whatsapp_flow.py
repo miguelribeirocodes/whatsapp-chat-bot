@@ -132,12 +132,8 @@ def processar_mensagem(usuario_id, mensagem):
         # (por exemplo após um send_back_cancel_buttons), tratar apropriadamente.
         if is_back:
             menu_text, _ = exibir_menu_principal()
-            # Usa saudação personalizada se disponível
-            primeiro_nome = sessoes.get(SessionKeys.get_user_key(usuario_id, SessionKeys.FIRST_NAME))
-            if primeiro_nome:
-                return f"Olá, {primeiro_nome}!\n{menu_text}"
-            else:
-                return f"{MSG.WELCOME}\n{menu_text}"
+            # Retorna apenas o menu sem saudação (evita repetição)
+            return menu_text
 
         if is_cancel:
             return build_return_to_menu_message(MSG.OPERATION_CANCELLED)
