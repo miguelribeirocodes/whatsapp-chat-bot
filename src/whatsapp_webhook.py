@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException  # importa FastAPI e tipos Request/HTTPException
+from fastapi import FastAPI, Request, HTTPException, Response  # importa FastAPI e tipos Request/HTTPException/Response
 import os  # importa módulo para variáveis de ambiente
 import requests  # importa requests para chamadas HTTP à Graph API
 from dotenv import load_dotenv  # importa load_dotenv para carregar .env
@@ -626,7 +626,7 @@ async def verify(request: Request):
     challenge = params.get('hub.challenge')  # obtém challenge enviado pelo Facebook
     token = params.get('hub.verify_token') or params.get('hub.verify_token')  # lê verify token
     if mode == 'subscribe' and token == VERIFY_TOKEN:  # valida token recebido
-        return challenge  # retorna challenge como string para concluir verificação
+        return Response(content=challenge, media_type="text/plain")  # retorna challenge como plain text
     raise HTTPException(status_code=403, detail='Verification failed')  # se inválido, retorna 403
 
 
