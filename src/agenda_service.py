@@ -1,10 +1,19 @@
-from datetime import datetime, timedelta, time, date  # importa tipos de data e hora da biblioteca padrão
+from datetime import datetime, timedelta, time, date, timezone  # importa tipos de data e hora da biblioteca padrão
 import gspread                                         # importa gspread para integração com Google Sheets
 from google.oauth2.service_account import Credentials  # importa credenciais do service account do Google
 import logging                                         # importa logging para registros de eventos
 import re
 
 logger = logging.getLogger(__name__)                   # obtém logger do módulo
+
+# Timezone do Brasil (GMT-3) - importante para servidor em UTC
+BRAZIL_TZ_OFFSET = timedelta(hours=-3)
+
+def agora_brasil() -> datetime:
+    """Retorna o horário atual no fuso horário do Brasil (GMT-3)."""
+    utc_now = datetime.now(timezone.utc)
+    brazil_now = utc_now + BRAZIL_TZ_OFFSET
+    return brazil_now.replace(tzinfo=None)  # naive datetime para comparar com dados da planilha
 
 # -------------------------------------------------------
 # Configuração da agenda em Google Sheets
@@ -260,7 +269,7 @@ def criar_cadastro_paciente(telefone: str, nome: str, origem: str = "whatsapp_cl
 
     telefone_str = str(telefone).strip()                # normaliza telefone em string
     nome_final = (nome or "").strip() or "Paciente sem nome"  # normaliza nome e aplica padrão
-    data_cadastro = datetime.now().strftime("%d/%m/%Y %H:%M")  # formata data/hora de cadastro
+    data_cadastro = agora_brasil().strftime("%d/%m/%Y %H:%M")  # formata data/hora de cadastro (Brasil GMT-3)
 
     nova_linha = [                                      # monta a nova linha para a planilha
         telefone_str,                                   # coluna A: telefone
@@ -441,7 +450,7 @@ def gerar_slots_semana_atual_a_partir_de_agora():
     Gera slots teóricos para a semana atual (definida por obter_intervalo_semana_atual_a_partir_de_hoje),
     considerando apenas horários que ainda não passaram em relação ao momento atual.
     """
-    agora = datetime.now()                             # obtém data/hora atual
+    agora = agora_brasil()                             # obtém data/hora atual (Brasil GMT-3)
     inicio_semana, fim_semana = obter_intervalo_semana_atual_a_partir_de_hoje()  # intervalo da semana
 
     slots_totais = []                                  # lista geral de slots
@@ -660,7 +669,7 @@ def obter_slots_disponiveis_para_data(data_dia: date):
             for row in vals[1:]:
                 rowdict = {headers[i]: (row[i] if i < len(row) else '') for i in range(len(headers))}
                 registros.append(rowdict)
-    agora = datetime.now()                              # obtém data/hora atual
+    agora = agora_brasil()                              # obtém data/hora atual (Brasil GMT-3)
     data_str_alvo = data_dia.strftime("%d/%m/%Y")       # formata data alvo como string
 
     slots = []                                          # lista para acumular slots encontrados
@@ -917,7 +926,7 @@ def buscar_proximo_agendamento_por_telefone(telefone: str):
     if not todos_valores or len(todos_valores) < 2:     # se não há dados
         return None                                     # retorna None
 
-    agora = datetime.now()                              # obtém data/hora atual
+    agora = agora_brasil()                              # obtém data/hora atual (Brasil GMT-3)
     melhor_dt = None                                    # melhor datetime encontrado
 
     for linha in todos_valores[1:]:                     # percorre a partir da linha 2
@@ -982,7 +991,7 @@ def registrar_lembrete_agendamento(appointment_dt, scheduled_dt, telefone, pacie
     appointment_iso = appointment_dt.isoformat()
     appointment_date = appointment_dt.strftime("%d/%m/%Y")
     appointment_time = appointment_dt.strftime("%H:%M")
-    created_at = datetime.now().isoformat()
+    created_at = agora_brasil().isoformat()  # timestamp Brasil GMT-3
     row = [scheduled_iso, appointment_iso, appointment_date, appointment_time, str(telefone), paciente, tipo, "", created_at, observacoes]
     ws.append_row(row, value_input_option="USER_ENTERED")
     all_values = ws.get_all_values()
@@ -994,8 +1003,7 @@ def obter_lembretes_pendentes(ate_dt=None):
     ws = obter_worksheet_lembretes()
     rows = ws.get_all_values()
     resultados = []
-    from datetime import datetime
-    now = datetime.now()
+    now = agora_brasil()  # Usa horário do Brasil
     for idx, linha in enumerate(rows[1:], start=2):
         # A: scheduled_iso, H: sent_at
         if len(linha) < 8:
@@ -1028,8 +1036,7 @@ def obter_lembretes_pendentes(ate_dt=None):
 def marcar_lembrete_como_enviado(row_index):
     """Marca o lembrete na linha especificada com timestamp de envio."""
     ws = obter_worksheet_lembretes()
-    from datetime import datetime
-    sent_iso = datetime.now().isoformat()
+    sent_iso = agora_brasil().isoformat()  # timestamp Brasil GMT-3
     cell = f"H{row_index}"
     # gspread Worksheet.update expects a 2D list for ranges; use update_acell for single cell
     try:
@@ -1133,7 +1140,7 @@ def cancelar_proximo_agendamento_por_telefone(telefone: str):
     if not todos_valores or len(todos_valores) < 2:     # se não há dados
         return None                                     # nada a cancelar
 
-    agora = datetime.now()                              # data/hora atual
+    agora = agora_brasil()                              # data/hora atual (Brasil GMT-3)
 
     melhor_linha = None                                 # índice da linha com melhor agendamento
     melhor_dt = None                                    # datetime do melhor agendamento

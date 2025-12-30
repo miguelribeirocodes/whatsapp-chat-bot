@@ -423,7 +423,7 @@ def processar_mensagem(usuario_id, mensagem):
             try:
                 from src.agenda_service import registrar_lembrete_agendamento
                 from src.scheduler import schedule_at
-                from datetime import timedelta, datetime
+                from datetime import timedelta
 
                 reminder_dt = horario - timedelta(hours=MSG.REMINDER_HOURS_BEFORE)
 
@@ -478,7 +478,7 @@ def processar_mensagem(usuario_id, mensagem):
                         print(f"🔴 [_send_and_mark] ERRO ao remover lembrete (linha {row}): {e}")
                         logger.exception(f"[_send_and_mark] ERRO ao remover lembrete (linha {row}): {e}")
 
-                if reminder_dt > datetime.now():
+                if reminder_dt > agora_brasil():  # Usa horário do Brasil
                     print(f"🟡 [confirmacao_agendamento] Agendando lembrete para {reminder_dt}")
                     logger.info(f"[confirmacao_agendamento] Agendando lembrete para {reminder_dt}")
                     schedule_at(reminder_dt, _send_and_mark)

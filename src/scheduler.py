@@ -1,11 +1,20 @@
 import threading
 import time as _time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import heapq
 import uuid
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Timezone do Brasil (GMT-3) - importante para servidor em UTC
+BRAZIL_TZ_OFFSET = timedelta(hours=-3)
+
+def agora_brasil() -> datetime:
+    """Retorna o horário atual no fuso horário do Brasil (GMT-3)."""
+    utc_now = datetime.now(timezone.utc)
+    brazil_now = utc_now + BRAZIL_TZ_OFFSET
+    return brazil_now.replace(tzinfo=None)
 
 # Min-heap of jobs: (run_at_timestamp, job_id, func, args, kwargs)
 _jobs_heap = []
@@ -16,7 +25,7 @@ _stop_event = threading.Event()
 def _worker_loop(poll_interval=30):
     logger.info("[scheduler] Worker started")
     while not _stop_event.is_set():
-        now_ts = datetime.now().timestamp()
+        now_ts = agora_brasil().timestamp()  # Usa horário do Brasil
         to_run = []
         with _jobs_lock:
             while _jobs_heap and _jobs_heap[0][0] <= now_ts:
@@ -58,12 +67,12 @@ def schedule_at(run_at: datetime, func, *args, **kwargs) -> str:
 
 
 def schedule_in(seconds: float, func, *args, **kwargs) -> str:
-    return schedule_at(datetime.now() + timedelta(seconds=seconds), func, *args, **kwargs)
+    return schedule_at(agora_brasil() + timedelta(seconds=seconds), func, *args, **kwargs)
 
 
 def schedule_daily(hour: int, minute: int, func, *args, **kwargs) -> str:
-    """Schedule a job that will run every day at hour:minute (local time). Returns id of first scheduled run."""
-    now = datetime.now()
+    """Schedule a job that will run every day at hour:minute (Brasil GMT-3). Returns id of first scheduled run."""
+    now = agora_brasil()  # Usa horário do Brasil
     run_today = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
     if run_today <= now:
         run_today = run_today + timedelta(days=1)
@@ -73,8 +82,8 @@ def schedule_daily(hour: int, minute: int, func, *args, **kwargs) -> str:
             func(*a, **k)
         except Exception:
             logger.exception("[scheduler] daily job exception")
-        # schedule next day
-        schedule_at(datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0) + timedelta(days=1), _runner_and_reschedule, *a, **k)
+        # schedule next day (Brasil time)
+        schedule_at(agora_brasil().replace(hour=hour, minute=minute, second=0, microsecond=0) + timedelta(days=1), _runner_and_reschedule, *a, **k)
 
     return schedule_at(run_today, _runner_and_reschedule, *args, **kwargs)
 

@@ -4,10 +4,20 @@ import requests  # importa requests para chamadas HTTP à Graph API
 from dotenv import load_dotenv  # importa load_dotenv para carregar .env
 import logging  # importa logging para logs
 import json  # importa json para serializar payloads de debug
+from datetime import datetime, timezone, timedelta  # tipos de data/hora
 from src.logging_config import setup_logging  # importa configuração centralizada de logging
 
 setup_logging()  # configura logging com handlers de console e arquivo
 logger = logging.getLogger(__name__)  # obtém logger do módulo
+
+# Timezone do Brasil (GMT-3) - importante para servidor em UTC
+BRAZIL_TZ_OFFSET = timedelta(hours=-3)
+
+def agora_brasil() -> datetime:
+    """Retorna o horário atual no fuso horário do Brasil (GMT-3)."""
+    utc_now = datetime.now(timezone.utc)
+    brazil_now = utc_now + BRAZIL_TZ_OFFSET
+    return brazil_now.replace(tzinfo=None)
 from src.agenda_service import (
     buscar_perfil_por_telefone,
     criar_cadastro_paciente,
@@ -156,9 +166,8 @@ try:
     def _owner_daily_summary():
         try:
             from src.agenda_service import obter_todos_agenda_cached
-            from datetime import datetime
             todos = obter_todos_agenda_cached()[1:]
-            hoje_dt = datetime.now()
+            hoje_dt = agora_brasil()  # Usa horário do Brasil
             hoje = hoje_dt.strftime('%d/%m/%Y')
             if hoje in _owner_summary_sent_dates:
                 logger.info('[daily_summary] already sent for %s, skipping', hoje)
@@ -195,8 +204,7 @@ try:
 
     # If current time is past scheduled hour and today's summary not yet sent, send it now
     try:
-        from datetime import datetime
-        now = datetime.now()
+        now = agora_brasil()  # Usa horário do Brasil
         if now.hour >= schedule_hour:
             hoje = now.strftime('%d/%m/%Y')
             if hoje not in _owner_summary_sent_dates:
@@ -218,8 +226,7 @@ try:
         """
         try:
             from src.agenda_service import adicionar_slots_dia_futuro
-            from datetime import datetime
-            hoje = datetime.now().strftime('%d/%m/%Y')
+            hoje = agora_brasil().strftime('%d/%m/%Y')  # Usa horário do Brasil
 
             if hoje in _daily_slots_created_dates:
                 logger.info('[daily_slots] slots already created for %s, skipping', hoje)
@@ -237,8 +244,7 @@ try:
 
     # Se já passou da meia-noite e ainda não rodou hoje, rodar agora
     try:
-        from datetime import datetime
-        now = datetime.now()
+        now = agora_brasil()  # Usa horário do Brasil
         hoje = now.strftime('%d/%m/%Y')
         if hoje not in _daily_slots_created_dates:
             logger.info('[daily_slots] Running initial slot creation for today')
@@ -540,7 +546,7 @@ try:
         telefone = lemb['telefone']
         paciente = lemb['paciente']
         ag_dt = datetime.fromisoformat(lemb['appointment_iso']) if lemb.get('appointment_iso') else None
-        if sched <= datetime.now():
+        if sched <= agora_brasil():  # Usa horário do Brasil
             # send immediately (interactive confirm) and mark
             print(f"🟡 [startup] Enviando lembrete IMEDIATAMENTE (ja passou da hora): row={row}, phone={telefone}, date={lemb['appointment_date']}, time={lemb['appointment_time']}")
             logger.info('[startup] Enviando lembrete IMEDIATAMENTE (ja passou da hora): row=%s, phone=%s, date=%s, time=%s', row, telefone, lemb['appointment_date'], lemb['appointment_time'])
