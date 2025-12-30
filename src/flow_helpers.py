@@ -3,9 +3,20 @@ flow_helpers.py
 Funções auxiliares para o fluxo do chatbot - elimina código duplicado.
 """
 
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 from typing import List, Tuple, Optional
 from src.constants import NOMES_DIAS_PT
+
+# Timezone do Brasil (GMT-3)
+BRAZIL_TZ_OFFSET = timedelta(hours=-3)
+
+
+def agora_brasil() -> datetime:
+    """Retorna o horário atual no fuso horário do Brasil (GMT-3)."""
+    utc_now = datetime.now(timezone.utc)
+    brazil_now = utc_now + BRAZIL_TZ_OFFSET
+    # Retorna sem timezone info para comparar com datetimes naive da planilha
+    return brazil_now.replace(tzinfo=None)
 
 
 # ============================================================================
@@ -234,11 +245,11 @@ def get_future_appointments(usuario_id: str = None) -> List[Tuple[datetime, List
     logger = logging.getLogger(__name__)
 
     todos = obter_todos_agenda_cached()[1:]  # Ignora cabeçalho
-    agora = datetime.now()
+    agora = agora_brasil()  # Usa horário do Brasil (GMT-3)
     agendamentos = []
 
     # DEBUG: Log para diagnóstico
-    logger.info(f"[get_future_appointments] agora={agora}, total_linhas={len(todos)}")
+    logger.info(f"[get_future_appointments] agora_brasil={agora}, total_linhas={len(todos)}")
 
     for i, linha in enumerate(todos):
         # Validação básica
