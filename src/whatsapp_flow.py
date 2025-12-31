@@ -205,7 +205,7 @@ def processar_mensagem(usuario_id, mensagem):
         # Primeira entrada: buscar e exibir agendamentos futuros
         if SessionKeys.LISTA_AGENDAMENTOS not in sessoes:
             # REFATORADO: usa helper ao invés de código inline
-            agendamentos = get_future_appointments()
+            agendamentos = get_future_appointments(usuario_id)  # Filtra apenas agendamentos do usuário
             sessoes[SessionKeys.LISTA_AGENDAMENTOS] = agendamentos
 
             # Sem agendamentos futuros
@@ -256,7 +256,7 @@ def processar_mensagem(usuario_id, mensagem):
         # Primeira entrada: buscar e exibir agendamentos futuros
         if SessionKeys.LISTA_AGENDAMENTOS_CANCELAR not in sessoes:
             # REFATORADO: usa helper ao invés de código inline
-            agendamentos = get_future_appointments()
+            agendamentos = get_future_appointments(usuario_id)  # Filtra apenas agendamentos do usuário
             sessoes[SessionKeys.LISTA_AGENDAMENTOS_CANCELAR] = agendamentos
 
             # Sem agendamentos futuros
@@ -572,7 +572,7 @@ def processar_mensagem(usuario_id, mensagem):
             nome_para_notif = None
             try:
                 if dt is not None:
-                    ags = get_future_appointments()
+                    ags = get_future_appointments(usuario_id)  # Filtra apenas agendamentos do usuário
                     for adt, linha in ags:
                         if adt == dt:
                             nome_para_notif = (linha[3] if len(linha) > 3 else None) or ''
