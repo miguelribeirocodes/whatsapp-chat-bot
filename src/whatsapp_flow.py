@@ -407,7 +407,7 @@ def processar_mensagem(usuario_id, mensagem):
                 old_appointment_dt = sessoes[reagendar_antigo_key]
                 logger.info(f"[confirmacao_agendamento] Reagendamento detectado! old_appointment_dt={old_appointment_dt}")
                 from src.agenda_service import cancelar_agendamento_por_data_hora
-                cancelar_agendamento_por_data_hora(old_appointment_dt)
+                cancelar_agendamento_por_data_hora(old_appointment_dt, telefone_esperado=usuario_id)
                 sessoes.pop(reagendar_antigo_key, None)
 
             # Registrar novo agendamento
@@ -583,7 +583,7 @@ def processar_mensagem(usuario_id, mensagem):
             from src.agenda_service import cancelar_agendamento_por_data_hora
             sucesso = False
             if dt:
-                sucesso = cancelar_agendamento_por_data_hora(dt)
+                sucesso = cancelar_agendamento_por_data_hora(dt, telefone_esperado=usuario_id)
 
             # Limpar sessão
             sessoes.pop(SessionKeys.get_user_key(usuario_id, SessionKeys.PREV_STATE), None)

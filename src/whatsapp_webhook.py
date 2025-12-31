@@ -716,7 +716,7 @@ async def webhook(request: Request):
                                         cancelled = False
                                         if dt:
                                             try:
-                                                cancelled = cancelar_agendamento_por_data_hora(dt)
+                                                cancelled = cancelar_agendamento_por_data_hora(dt, telefone_esperado=from_number)
                                             except Exception:
                                                 logger.exception('[rem_handler] fail cancel')
                                         if cancelled:

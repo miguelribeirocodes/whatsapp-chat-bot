@@ -833,7 +833,7 @@ def registrar_agendamento_google_sheets(
     return True                                         # retorna sucesso
 
 
-def cancelar_agendamento_por_data_hora(dt_consulta: datetime) -> bool:
+def cancelar_agendamento_por_data_hora(dt_consulta: datetime, telefone_esperado: str = None) -> bool:
     """
     Procura na aba Agenda uma linha com a data/hora informadas.
     Se encontrar e o slot estiver AGENDADO:
@@ -842,6 +842,9 @@ def cancelar_agendamento_por_data_hora(dt_consulta: datetime) -> bool:
       - retorna True
 
     Se não encontrar ou não estiver AGENDADO, retorna False.
+
+    IMPORTANTE: Se telefone_esperado for fornecido, valida se o telefone do agendamento
+    bate com o esperado (segurança: evita que um usuário cancele agendamento de outro).
     """
     ws = obter_worksheet_agenda()                       # obtém worksheet da Agenda
     todos_valores = ws.get_all_values()                 # lê todas as linhas
@@ -870,6 +873,13 @@ def cancelar_agendamento_por_data_hora(dt_consulta: datetime) -> bool:
 
     if linha_encontrada is None:                        # se não encontrou linha
         return False                                    # não há o que cancelar
+
+    # SEGURANÇA: validar telefone se foi fornecido
+    if telefone_esperado:
+        telefone_agenda = (linha_conteudo[4].strip() if len(linha_conteudo) > 4 else "")
+        if telefone_agenda != telefone_esperado:
+            logger.warning("[cancelar_agendamento] Tentativa de cancelar agendamento de outro usuário: esperado=%s encontrado=%s", telefone_esperado, telefone_agenda)
+            return False  # Nega cancelamento de agendamento de outro usuário
 
     status_exist = (linha_conteudo[5].strip().upper() if len(linha_conteudo) >= 6 else "")  # status atual
     if status_exist != "AGENDADO":                      # só cancela se estiver AGENDADO
