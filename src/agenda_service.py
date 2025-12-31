@@ -1077,15 +1077,24 @@ def remover_lembrete_por_row(row_index):
         return False
 
 
-def remover_lembretes_por_appointment(appointment_iso, telefone=None):
-    """Remove todos os lembretes pendentes que correspondam a um appointment_iso.
-    A remoção sempre tentará casar por telefone + data + horário do agendamento
-    (formato escrito na planilha: `appointment_date` = dd/mm/YYYY, `appointment_time` = HH:MM).
-    Se `telefone` for fornecido, filtra por telefone também. Retorna o número de linhas removidas.
+def remover_lembretes_por_appointment(appointment_iso, telefone):
+    """Remove todos os lembretes pendentes que correspondam a um appointment_iso + telefone.
+    IMPORTANTE: `telefone` é obrigatório para evitar remover lembretes de outros usuários.
+
+    A remoção sempre tentará casar por:
+      - telefone (obrigatório)
+      - data + horário do agendamento (formato planilha: `appointment_date` = dd/mm/YYYY, `appointment_time` = HH:MM)
+
+    Retorna o número de linhas removidas.
     """
     ws = obter_worksheet_lembretes()
     pend = obter_lembretes_pendentes()
     rows_to_delete = []
+
+    if not telefone:
+        logger.warning("[remover_lembretes_por_appointment] REJEITADO: telefone obrigatório não fornecido")
+        return 0
+
     # normalize target date/time from appointment_iso when possible
     target_date = None
     target_time = None
@@ -1104,6 +1113,11 @@ def remover_lembretes_por_appointment(appointment_iso, telefone=None):
         appt_date = p.get('appointment_date')
         appt_time = p.get('appointment_time')
         tel = p.get('telefone')
+
+        # SEGURANÇA: validar telefone SEMPRE
+        if str(tel) != str(telefone):
+            continue
+
         if target_date and target_time:
             match_dt = (appt_date == target_date and appt_time == target_time)
         else:
@@ -1111,11 +1125,8 @@ def remover_lembretes_por_appointment(appointment_iso, telefone=None):
             match_dt = (p.get('appointment_iso') == appointment_iso)
         if not match_dt:
             continue
-        if telefone is not None:
-            if str(tel) == str(telefone):
-                rows_to_delete.append(p['row'])
-        else:
-            rows_to_delete.append(p['row'])
+
+        rows_to_delete.append(p['row'])
 
     if not rows_to_delete:
         return 0
