@@ -15,6 +15,15 @@ def agora_brasil() -> datetime:
     brazil_now = utc_now + BRAZIL_TZ_OFFSET
     return brazil_now.replace(tzinfo=None)  # naive datetime para comparar com dados da planilha
 
+
+def _notify_dev_error_safe(error_msg: str, context: str = ""):
+    """Helper para notificar dev sem quebrar se houver erro. Importação local para evitar circular imports."""
+    try:
+        from src import whatsapp_webhook
+        whatsapp_webhook.notify_dev_error(error_msg, context)
+    except Exception as e:
+        logger.warning("[_notify_dev_error_safe] Falha ao notificar dev: %s", str(e))
+
 # -------------------------------------------------------
 # Configuração da agenda em Google Sheets
 # (mesmos valores do whatsapp_flow_simulado.py por enquanto)

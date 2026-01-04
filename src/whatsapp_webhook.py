@@ -98,6 +98,31 @@ def send_reminder(to: str, text: str):
         raise
 
 
+def notify_dev_error(error_msg: str, context: str = ""):
+    """
+    Envia notificação de erro para o DEV_PHONE configurado em messages.py
+
+    Args:
+        error_msg: Mensagem de erro a enviar
+        context: Contexto adicional (ex: nome da função, user_id, etc)
+    """
+    dev_phone = getattr(MSG, 'DEV_PHONE', None)
+    if not dev_phone:
+        logger.debug("[notify_dev_error] DEV_PHONE não configurado, pulando notificação")
+        return
+
+    try:
+        timestamp = agora_brasil().strftime('%d/%m/%Y %H:%M:%S')
+        context_str = f" [{context}]" if context else ""
+        texto = f"🔴 ERRO{context_str} {timestamp}\n\n{error_msg}"
+
+        logger.info("[notify_dev_error] Enviando notificação de erro para desenvolvedor: %s", dev_phone)
+        send_text(dev_phone, texto)
+    except Exception as e:
+        logger.error("[notify_dev_error] Falha ao enviar notificação de erro para dev: %s", str(e))
+        # Não relançar exceção - se falhar, apenas loga
+
+
 def send_reminder_to_owner(patient_name: str, date: str, time: str, isCancel: bool = False,
                            isReschedule: bool = False, old_date: str = None, old_time: str = None):
     """
@@ -393,13 +418,17 @@ def send_list_days(to: str, title: str, items: list):
         logger.info("[send_list_days] Sending to %s payload header=%s rows=%d", to, title, sum(len(s.get('rows',[])) for s in payload['interactive']['action']['sections']))  # log com número de rows
         r = requests.post(GRAPH_API_BASE, headers=headers, json=payload, timeout=15)  # envia para Graph API
         if r.status_code != 200:
+            error_summary = f"Status {r.status_code} ao enviar lista para {to}\nTítulo: {title}\nRows: {sum(len(s.get('rows',[])) for s in payload['interactive']['action']['sections'])}\nResposta: {r.text[:200]}"
             logger.error("[send_list_days] Error sending to %s - Status: %s | Payload: %s | Response: %s",
                         to, r.status_code, json.dumps(payload, ensure_ascii=False), r.text)  # log detalhado em caso de erro
+            notify_dev_error(error_summary, "send_list_days")
         else:
             logger.info("[send_list_days] Successfully sent to %s", to)  # log de sucesso
         return r  # retorna response
-    except Exception:
+    except Exception as e:
+        error_msg = f"Exceção ao enviar lista para {to}: {str(e)}"
         logger.exception("[send_list_days] Exception while sending list of days to %s", to)  # log de erro com destino
+        notify_dev_error(error_msg, "send_list_days")
         raise  # re-levanta
 
 

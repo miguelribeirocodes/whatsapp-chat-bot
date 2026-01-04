@@ -85,6 +85,10 @@ ASK_FULL_NAME = "Olá! Por favor, informe seu nome completo:"
 # Telefone do dono da clínica (string no formato internacional, ex: 551199999999)
 CLINIC_OWNER_PHONE = "553899135151"
 
+# Telefone do desenvolvedor para notificações de erro (mesmo formato internacional)
+# Se deixado vazio, desabilita notificações de erro por WhatsApp
+DEV_PHONE = "553899135151"
+
 # Lembretes: número de horas antes do agendamento para envio do lembrete
 # Ex.: 24 envia 24 horas antes. Pode ser ajustado conforme necessidade.
 REMINDER_HOURS_BEFORE = 24
