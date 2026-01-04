@@ -388,9 +388,7 @@ def obter_intervalo_semana_relativa(offset_semanas: int = 0):
     novo_fim = fim_atual + timedelta(days=delta_dias)                          # fim da semana relativa
 
     # Retorna o novo par (início, fim) já deslocado.                            # devolve o resultado
-    hoje = date.today()                                # data de hoje
-    weekday = hoje.weekday()                           # índice do dia da semana
-    return novo_inicio - timedelta(days=weekday), novo_fim                                               # tuple de (date, date)
+    return novo_inicio, novo_fim                                               # tuple de (date, date)
 
 def extrair_intervalo_semana_da_mensagem(texto: str):
     """

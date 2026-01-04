@@ -893,6 +893,11 @@ async def webhook(request: Request):
                         logger.exception('[webhook] Falha ao enviar mensagem de aguarde antes de obter dias')  # log se falhar ao enviar aguarde
                     offset = wf.sessoes.get(from_number + '_semana_offset', 0)  # offset da semana salvo na sessão
                     dias = wf.obter_dias_disponiveis_semana(offset)  # obtém dias disponíveis do fluxo
+                    # IMPORTANTE: WhatsApp permite no máximo 10 rows por lista interativa
+                    # Reservamos 2 slots para Voltar e Cancelar, então limitamos a 8 dias
+                    if len(dias) > 8:
+                        logger.warning('[webhook] Lista de dias truncada de %d para 8 (limite WhatsApp)', len(dias))
+                        dias = dias[:8]
                     items = []  # prepara lista de rows
                     for i, d in enumerate(dias):  # formata cada dia
                         dia_pt = d.strftime('%d/%m/%Y')  # data formatada
