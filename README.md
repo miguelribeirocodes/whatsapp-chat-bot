@@ -1,53 +1,75 @@
-# WhatsApp Bot Agendador
+# WhatsApp Scheduling Chatbot
 
-Chatbot para WhatsApp que permite agendar, reagendar e cancelar consultas. Backend em Google Sheets.
+WhatsApp chatbot for scheduling, rescheduling, and canceling appointments with Google Sheets backend.
 
-## Visao Geral
+## Overview
 
-- Menu guiado em portugues
-- Agenda de consultas em Google Sheets
-- Lembretes automaticos 24h antes
-- Resumo diario para proprietario
+- Guided conversational menu in Portuguese
+- Appointment scheduling via Google Sheets integration
+- Automated 24-hour appointment reminders
+- Daily summary reports for business owners
+- Real-time appointment status management
 
----
+## Key Technologies
 
-## GUIA RAPIDO
+- **Backend**: Python with Flask/FastAPI
+- **Messaging**: WhatsApp Cloud API (Meta)
+- **Database**: Google Sheets
+- **Webhook Management**: Ngrok for local development
+- **Service Management**: NSSM (Windows Service)
 
-### 1. Setup Inicial (uma unica vez)
+## Core Features
+
+The system provides:
+- **Interactive Menu System** with guided conversation flows
+- **Smart Scheduling** with conflict detection and availability management
+- **Automated Reminders** sent 24 hours before appointments
+- **Appointment Management** for rescheduling and cancellations
+- **Contact Management** with customer registration and history
+- **Service Logging** with error tracking and execution logs
+- **Google Sheets Integration** for easy data access and backup
+
+## Getting Started
+
+### Prerequisites
+- Python 3.x
+- WhatsApp Cloud API credentials (Meta for Developers)
+- Google Sheets with proper configuration
+- Ngrok account (for local development)
+
+### Quick Setup (One-time)
 
 ```powershell
 .\setup.ps1
 ```
 
-Configure o arquivo `.env` com suas credenciais:
+Configure your `.env` file with required credentials:
 ```
-WHATSAPP_TOKEN=seu_token
-WHATSAPP_PHONE_ID=seu_phone_id
+WHATSAPP_TOKEN=your_token
+WHATSAPP_PHONE_ID=your_phone_id
 VERIFY_TOKEN=OTljYjY3MWUtMmMxMy00MTM4LTk0MTQtYWM2MzI3MTRjZDUz
-SPREADSHEET_ID=seu_spreadsheet_id
+SPREADSHEET_ID=your_spreadsheet_id
 NGROK_ENABLED=true
-NGROK_AUTH_TOKEN=seu_token_ngrok
+NGROK_AUTH_TOKEN=your_ngrok_token
 ```
 
----
+## Local Development
 
-## DESENVOLVIMENTO LOCAL (Debug)
-
-### Iniciar servidor com ngrok automatico
+### Start Server with Automatic Ngrok
 
 ```powershell
 .\dev\start_webhook.ps1
 ```
 
-Aguarde ate ver:
+Wait until you see:
 ```
 Servidor iniciando...
 [ngrok] Webhook URL: https://xxxxx.ngrok-free.dev/webhook
 ```
 
-Configure essa URL no **Meta for Developers** > Settings > Configuration.
+Configure this URL in **Meta for Developers** > Settings > Configuration.
 
-### Ou sem ngrok (manual)
+### Manual Alternative (without automatic ngrok)
 
 ```powershell
 # Terminal 1:
@@ -57,76 +79,70 @@ Configure essa URL no **Meta for Developers** > Settings > Configuration.
 ngrok http 8000
 ```
 
-### Testar fluxos conversacionais
+### Test Conversational Flows
 
 ```powershell
 python tests/test_fluxo_conversacional.py
 ```
 
-Gera relatorios em: `tests/relatorio_testes_<timestamp>.txt`
+Generates reports in: `tests/relatorio_testes_<timestamp>.txt`
 
----
+## Production Deployment (Windows Service)
 
-## PRODUCAO (Servico Windows)
+### Install Service (First Time)
 
-### Instalar servico (primeira vez)
+See complete guide: [docs/CONFIGURAR_SERVICO_WINDOWS.md](docs/CONFIGURAR_SERVICO_WINDOWS.md)
 
-Veja guia completo: [docs/CONFIGURAR_SERVICO_WINDOWS.md](docs/CONFIGURAR_SERVICO_WINDOWS.md)
-
-Resumo:
+Summary:
 ```powershell
-# 1. Instalar NSSM (https://nssm.cc/download)
+# 1. Install NSSM (https://nssm.cc/download)
 # 2. nssm install WhatsAppAgendadorBot
-#    Configure path do Python, argumentos: src/whatsapp_webhook.py
+#    Configure Python path and arguments: src/whatsapp_webhook.py
 # 3. nssm start WhatsAppAgendadorBot
 ```
 
-### Atualizar codigo em producao
+### Update Code in Production
 
 ```powershell
 .\deployment\atualizar_servico.ps1
 ```
 
-Faz: parar -> git pull -> instalar dependencias -> reiniciar
+Executes: stop service → git pull → install dependencies → restart service
 
-### Monitorar logs
+### Monitor Service Logs
 
 ```powershell
 powershell -Command "Get-Content 'logs\service_error.log' -Tail 20"
 ```
 
----
-
-## Estrutura do Projeto
+## Project Structure
 
 ```
-Chat Bot Agendador/
-├── setup.ps1                   (setup inicial)
-├── dev/                        (desenvolvimento)
-│   ├── start_webhook.ps1      (com ngrok automatico)
-│   └── iniciar_servidor.ps1   (sem ngrok)
-├── deployment/                 (producao)
-│   └── atualizar_servico.ps1  (atualizar servico)
-├── src/                        (codigo principal)
-├── tests/                      (testes automatizados)
-├── docs/                       (documentacao)
-└── logs/                       (logs de execucao)
+whatsapp-chat-bot/
+├── setup.ps1                   (initial setup)
+├── dev/                        (development)
+│   ├── start_webhook.ps1      (with automatic ngrok)
+│   └── iniciar_servidor.ps1   (without ngrok)
+├── deployment/                 (production)
+│   └── atualizar_servico.ps1  (update service)
+├── src/                        (main application code)
+├── tests/                      (automated tests)
+├── docs/                       (documentation)
+└── logs/                       (execution logs)
 ```
 
-## Google Sheets - Abas Esperadas
+## Google Sheets Configuration
 
-**Agenda**: dia_semana, data, hora, nome_paciente, telefone, status, origem, observacoes
+**Appointments Sheet**: dia_semana, data, hora, nome_paciente, telefone, status, origem, observacoes
 
-**Cadastros**: telefone, nome, data_cadastro, origem, observacoes
+**Contacts Sheet**: telefone, nome, data_cadastro, origem, observacoes
 
-**Lembretes**: scheduled_iso, appointment_iso, appointment_date, appointment_time, telefone, paciente, tipo, sent_at, created_at, observacoes
+**Reminders Sheet**: scheduled_iso, appointment_iso, appointment_date, appointment_time, telefone, paciente, tipo, sent_at, created_at, observacoes
 
----
+## Documentation
 
-## Documentacao Completa
-
-- [Setup Novo Computador](SETUP_NOVO_COMPUTADOR.md) - Quando mudar de PC
-- [Guia Desenvolvedor](docs/GUIA_DESENVOLVEDOR.md) - Arquitetura interna
-- [Configurar Servico Windows](docs/CONFIGURAR_SERVICO_WINDOWS.md) - Setup producao com NSSM
-- [Plano de Testes](docs/PLANO_TESTES.md) - Estrategia de testes
-- [Changelog](docs/CHANGELOG.md) - Historico de alteracoes
+- [New Computer Setup](SETUP_NOVO_COMPUTADOR.md) - When switching machines
+- [Developer Guide](docs/GUIA_DESENVOLVEDOR.md) - Internal architecture
+- [Windows Service Configuration](docs/CONFIGURAR_SERVICO_WINDOWS.md) - Production setup with NSSM
+- [Test Plan](docs/PLANO_TESTES.md) - Testing strategy
+- [Changelog](docs/CHANGELOG.md) - Version history and updates
